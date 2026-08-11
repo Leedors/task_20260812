@@ -14,11 +14,17 @@ public sealed record RegisterEmployeesCommand(EmployeePayload Payload) : IComman
 /// <param name="Format">실제로 사용된 파서 형식.</param>
 /// <param name="Created">새로 추가된 건수.</param>
 /// <param name="Updated">이미 있는 이메일이라 갱신된 건수.</param>
-/// <param name="TotalProcessed">페이로드에서 읽어들인 총 건수.</param>
+/// <param name="Restored">
+/// 연락망에서 제외(soft delete)돼 있다가 복구된 건수.
+/// 갱신과 합치지 않고 따로 세는 이유는, 빠져 있던 사람이 다시 살아나는 것은
+/// 호출자가 <b>모르고 지나가면 안 되는</b> 변화이기 때문이다.
+/// </param>
+/// <param name="TotalProcessed">페이로드에서 읽어들인 총 건수(= Created + Updated + Restored).</param>
 public sealed record RegisterEmployeesResult(
     EmployeeSourceFormat Format,
     int Created,
     int Updated,
+    int Restored,
     int TotalProcessed);
 
 internal sealed class RegisterEmployeesCommandValidator : IValidator<RegisterEmployeesCommand>

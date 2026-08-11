@@ -13,7 +13,17 @@ namespace EmployeeDirectory.Application.Abstractions.Persistence;
 /// </remarks>
 public interface IEmployeeReadStore
 {
-    Task<PagedResult<EmployeeDto>> GetPageAsync(int page, int pageSize, CancellationToken cancellationToken);
+    /// <param name="page">1부터 시작하는 페이지 번호.</param>
+    /// <param name="pageSize">페이지 크기.</param>
+    /// <param name="keyword">
+    /// 이름·이메일·전화번호 부분 일치 검색어. 비어 있으면 전체를 대상으로 한다.
+    /// </param>
+    /// <param name="cancellationToken">취소 토큰.</param>
+    Task<PagedResult<EmployeeDto>> GetPageAsync(
+        int page,
+        int pageSize,
+        string? keyword,
+        CancellationToken cancellationToken);
 
     Task<EmployeeDto?> FindByNameAsync(string name, CancellationToken cancellationToken);
 }

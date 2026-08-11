@@ -68,13 +68,25 @@ internal sealed class RegisterEmployeesCommandHandler(
 
         var toInsert = new List<Employee>();
         var updated = 0;
+        var restored = 0;
 
         foreach (var item in parsed)
         {
             if (existing.TryGetValue(item.Email.Value, out var current))
             {
+                // 제외돼 있던 사람이 다시 올라왔다면 재입사 또는 오삭제 복구로 본다.
+                // (이메일에 유일 제약이 걸려 있어 "새로 추가"로 처리할 수도 없다)
+                if (current.IsDeleted)
+                {
+                    current.Restore();
+                    restored++;
+                }
+                else
+                {
+                    updated++;
+                }
+
                 current.UpdateContact(item.Name, item.Tel, item.Joined);
-                updated++;
                 continue;
             }
 
@@ -92,14 +104,20 @@ internal sealed class RegisterEmployeesCommandHandler(
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         logger.LogInformation(
-            "직원 {Total}건 등록 완료 (형식: {Format}, 신규: {Created}, 갱신: {Updated}, 원본: {Source})",
+            "직원 {Total}건 등록 완료 (형식: {Format}, 신규: {Created}, 갱신: {Updated}, 복구: {Restored}, 원본: {Source})",
             parsed.Count,
             parser.Format,
             toInsert.Count,
             updated,
+            restored,
             command.Payload.SourceName ?? "(body)");
 
-        return Result.Success(new RegisterEmployeesResult(parser.Format, toInsert.Count, updated, parsed.Count));
+        return Result.Success(new RegisterEmployeesResult(
+            parser.Format,
+            toInsert.Count,
+            updated,
+            restored,
+            parsed.Count));
     }
 
     /// <summary>

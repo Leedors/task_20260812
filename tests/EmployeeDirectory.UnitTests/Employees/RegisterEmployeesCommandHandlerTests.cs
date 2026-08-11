@@ -71,6 +71,42 @@ public sealed class RegisterEmployeesCommandHandlerTests
     }
 
     [Fact]
+    public async Task 제외된_직원의_이메일로_다시_올리면_복구되고_따로_집계된다()
+    {
+        var employee = Employee.Create("김철수", "charles@clovf.com", "01000000000", new DateOnly(2018, 3, 7), Today).Value;
+        employee.MarkDeleted(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
+        _repository.Seed(employee);
+
+        const string Csv = "김철수, charles@clovf.com, 010-9999-8888, 2018.03.07";
+
+        var result = await _handler.HandleAsync(new RegisterEmployeesCommand(new EmployeePayload(Csv)), default);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(0, result.Value.Created);
+        Assert.Equal(0, result.Value.Updated);
+        Assert.Equal(1, result.Value.Restored);
+        Assert.False(employee.IsDeleted);
+        Assert.Equal("010-9999-8888", employee.Tel.Formatted);
+    }
+
+    [Fact]
+    public async Task 집계는_항상_전체_처리_건수와_일치한다()
+    {
+        _repository.Seed(Employee.Create("박영희", "matilda@clovf.com", "01087654321", new DateOnly(2021, 4, 28), Today).Value);
+
+        const string Csv = """
+                           김철수, charles@clovf.com, 01075312468, 2018.03.07
+                           박영희, matilda@clovf.com, 01087654321, 2021.04.28
+                           """;
+
+        var result = await _handler.HandleAsync(new RegisterEmployeesCommand(new EmployeePayload(Csv)), default);
+
+        Assert.True(result.IsSuccess);
+        var summary = result.Value;
+        Assert.Equal(summary.TotalProcessed, summary.Created + summary.Updated + summary.Restored);
+    }
+
+    [Fact]
     public async Task 대소문자만_다른_이메일도_같은_직원으로_본다()
     {
         _repository.Seed(Employee.Create("김철수", "charles@clovf.com", "01000000000", new DateOnly(2018, 3, 7), Today).Value);

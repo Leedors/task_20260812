@@ -2,11 +2,13 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using EmployeeDirectory.Api.Common;
+using EmployeeDirectory.Api.Diagnostics;
 using EmployeeDirectory.Api.Middleware;
 using EmployeeDirectory.Api.Swagger;
 using EmployeeDirectory.Application;
 using EmployeeDirectory.Infrastructure;
 using EmployeeDirectory.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -24,6 +26,11 @@ builder.Services
 
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
+// 긴급 연락망은 정작 비상시에 살아 있어야 하므로 상태 확인 경로를 노출한다.
+builder.Services
+    .AddHealthChecks()
+    .AddCheck<DatabaseHealthCheck>("database", tags: ["ready"]);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -68,6 +75,11 @@ app.UseSwaggerUI(options =>
 });
 
 app.MapControllers();
+
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = HealthCheckResponseWriter.WriteAsync
+}).ExcludeFromDescription();
 
 // 루트로 들어오면 API 문서로 안내한다.
 app.MapGet("/", () => Results.Redirect("/swagger")).ExcludeFromDescription();

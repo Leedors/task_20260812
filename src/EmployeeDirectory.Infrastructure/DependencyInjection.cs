@@ -47,6 +47,7 @@ public static class DependencyInjection
         services.AddScoped<IEmployeeRepository, EmployeeRepository>();
         services.AddScoped<IEmployeeReadStore, EmployeeReadStore>();
         services.AddScoped<IDatabaseInitializer, DatabaseInitializer>();
+        services.AddScoped<IDatabaseProbe, DatabaseProbe>();
 
         // 등록 순서 = 형식 추론 우선순위. json 은 시작 문자로 정확히 판별되고 csv 가 폴백이다.
         services.AddScoped<IEmployeeSourceParser, JsonEmployeeParser>();

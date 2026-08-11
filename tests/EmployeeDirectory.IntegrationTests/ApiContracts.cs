@@ -6,7 +6,14 @@ namespace EmployeeDirectory.IntegrationTests;
 /// 테스트는 서버의 DTO 타입을 재사용하지 않고 <b>응답 JSON 모양</b>을 별도로 선언한다.
 /// 내부 타입을 바꿨을 때 외부 계약이 깨지는 것을 테스트가 알아채도록 하기 위해서다.
 /// </summary>
-internal sealed record EmployeeResponse(int Id, string Name, string Email, string Tel, DateOnly Joined);
+internal sealed record EmployeeResponse(
+    int Id,
+    string Name,
+    string Email,
+    string Tel,
+    DateOnly Joined,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset UpdatedAt);
 
 internal sealed record PagedResponse(
     IReadOnlyList<EmployeeResponse> Items,
@@ -21,6 +28,7 @@ internal sealed record RegisterResponse(
     [property: JsonPropertyName("format")] string Format,
     [property: JsonPropertyName("created")] int Created,
     [property: JsonPropertyName("updated")] int Updated,
+    [property: JsonPropertyName("restored")] int Restored,
     [property: JsonPropertyName("totalProcessed")] int TotalProcessed);
 
 internal sealed record ProblemResponse(
@@ -30,3 +38,10 @@ internal sealed record ProblemResponse(
     IReadOnlyList<ProblemError>? Errors);
 
 internal sealed record ProblemError(string Code, string Message);
+
+internal sealed record HealthResponse(
+    string Status,
+    double TotalDurationMs,
+    IReadOnlyList<HealthCheckEntry> Checks);
+
+internal sealed record HealthCheckEntry(string Name, string Status, string? Description, double DurationMs);

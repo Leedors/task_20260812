@@ -14,7 +14,14 @@ public sealed class GetEmployeesQueryTests
     {
         for (var i = 1; i <= 25; i++)
         {
-            _readStore.Employees.Add(new EmployeeDto(i, $"직원{i:00}", $"user{i:00}@clovf.com", "010-0000-0000", new DateOnly(2020, 1, 1)));
+            _readStore.Employees.Add(new EmployeeDto(
+                i,
+                $"직원{i:00}",
+                $"user{i:00}@clovf.com",
+                "010-0000-0000",
+                new DateOnly(2020, 1, 1),
+                DateTimeOffset.UnixEpoch,
+                DateTimeOffset.UnixEpoch));
         }
     }
 
@@ -74,7 +81,14 @@ public sealed class GetEmployeeByNameQueryTests
     private readonly FakeEmployeeReadStore _readStore = new();
 
     public GetEmployeeByNameQueryTests()
-        => _readStore.Employees.Add(new EmployeeDto(1, "김철수", "charles@clovf.com", "010-7531-2468", new DateOnly(2018, 3, 7)));
+        => _readStore.Employees.Add(new EmployeeDto(
+            1,
+            "김철수",
+            "charles@clovf.com",
+            "010-7531-2468",
+            new DateOnly(2018, 3, 7),
+            DateTimeOffset.UnixEpoch,
+            DateTimeOffset.UnixEpoch));
 
     [Fact]
     public async Task 이름이_일치하면_상세를_반환한다()

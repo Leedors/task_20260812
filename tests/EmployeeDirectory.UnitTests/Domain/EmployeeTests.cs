@@ -76,6 +76,57 @@ public sealed class EmployeeTests
     }
 
     [Fact]
+    public void 전체_교체는_이메일까지_바꾼다()
+    {
+        var employee = Employee.Create("김철수", "charles@clovf.com", "01075312468", new DateOnly(2018, 3, 7), Today).Value;
+
+        var result = employee.Replace("김철수", "new@clovf.com", "010-0000-1111", new DateOnly(2019, 1, 1), Today);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("new@clovf.com", employee.Email.Value);
+        Assert.Equal("010-0000-1111", employee.Tel.Formatted);
+        Assert.Equal(new DateOnly(2019, 1, 1), employee.Joined);
+    }
+
+    [Fact]
+    public void 전체_교체가_실패하면_기존_값이_그대로_남는다()
+    {
+        var employee = Employee.Create("김철수", "charles@clovf.com", "01075312468", new DateOnly(2018, 3, 7), Today).Value;
+
+        var result = employee.Replace("김철수", "이메일아님", "01075312468", new DateOnly(2018, 3, 7), Today);
+
+        Assert.True(result.IsFailure);
+        // 검증을 먼저 끝내고 한 번에 반영하므로 부분 적용된 상태가 남지 않는다.
+        Assert.Equal("charles@clovf.com", employee.Email.Value);
+    }
+
+    [Fact]
+    public void 제외_처리하면_삭제_시각이_기록된다()
+    {
+        var employee = Employee.Create("김철수", "charles@clovf.com", "01075312468", new DateOnly(2018, 3, 7), Today).Value;
+        var deletedAt = new DateTimeOffset(2026, 8, 11, 9, 0, 0, TimeSpan.Zero);
+
+        Assert.False(employee.IsDeleted);
+
+        employee.MarkDeleted(deletedAt);
+
+        Assert.True(employee.IsDeleted);
+        Assert.Equal(deletedAt, employee.DeletedAt);
+    }
+
+    [Fact]
+    public void 복구하면_삭제_표시가_사라진다()
+    {
+        var employee = Employee.Create("김철수", "charles@clovf.com", "01075312468", new DateOnly(2018, 3, 7), Today).Value;
+        employee.MarkDeleted(DateTimeOffset.UtcNow);
+
+        employee.Restore();
+
+        Assert.False(employee.IsDeleted);
+        Assert.Null(employee.DeletedAt);
+    }
+
+    [Fact]
     public void 연락처_갱신시_이메일은_바뀌지_않는다()
     {
         var employee = Employee.Create("김철수", "charles@clovf.com", "01075312468", new DateOnly(2018, 3, 7), Today).Value;

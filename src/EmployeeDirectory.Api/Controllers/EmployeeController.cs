@@ -1,8 +1,11 @@
 using System.Text;
 using EmployeeDirectory.Api.Common;
+using EmployeeDirectory.Api.Contracts;
 using EmployeeDirectory.Application.Abstractions.Messaging;
 using EmployeeDirectory.Application.Abstractions.Parsing;
+using EmployeeDirectory.Application.Employees.Commands.DeleteEmployee;
 using EmployeeDirectory.Application.Employees.Commands.RegisterEmployees;
+using EmployeeDirectory.Application.Employees.Commands.UpdateEmployee;
 using EmployeeDirectory.Application.Employees.Dtos;
 using EmployeeDirectory.Application.Employees.Queries.GetEmployeeByName;
 using EmployeeDirectory.Application.Employees.Queries.GetEmployees;
@@ -23,21 +26,26 @@ public sealed class EmployeeController(
     /// <summary>업로드 파일이 아닌 폼 필드로 텍스트를 보낼 때 인식하는 필드명들.</summary>
     private static readonly string[] TextFieldNames = ["content", "data", "text", "payload", "body"];
 
-    /// <summary>직원 목록을 페이지 단위로 조회합니다.</summary>
+    /// <summary>직원 목록을 페이지 단위로 조회합니다. 검색어를 주면 부분 일치로 좁힙니다.</summary>
     /// <param name="page">1부터 시작하는 페이지 번호.</param>
     /// <param name="pageSize">페이지 크기(최대 200).</param>
+    /// <param name="q">
+    /// 검색어. 이름·이메일·전화번호에 대해 부분 일치로 찾습니다.
+    /// 전화번호는 하이픈을 빼고 비교하므로 <c>010-7531</c> 로도 검색됩니다.
+    /// </param>
     /// <param name="cancellationToken">취소 토큰.</param>
     /// <response code="200">페이지 항목과 전체 건수를 함께 반환합니다.</response>
-    /// <response code="400">페이징 파라미터가 올바르지 않습니다.</response>
+    /// <response code="400">페이징 파라미터 또는 검색어가 올바르지 않습니다.</response>
     [HttpGet]
     [ProducesResponseType(typeof(PagedResult<EmployeeDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<PagedResult<EmployeeDto>>> GetEmployees(
         [FromQuery] int page = GetEmployeesQuery.DefaultPage,
         [FromQuery] int pageSize = GetEmployeesQuery.DefaultPageSize,
+        [FromQuery] string? q = null,
         CancellationToken cancellationToken = default)
     {
-        var result = await queryDispatcher.SendAsync(new GetEmployeesQuery(page, pageSize), cancellationToken);
+        var result = await queryDispatcher.SendAsync(new GetEmployeesQuery(page, pageSize, q), cancellationToken);
 
         return result.IsSuccess
             ? Ok(result.Value)
@@ -101,6 +109,59 @@ public sealed class EmployeeController(
             nameof(GetEmployees),
             new { page = GetEmployeesQuery.DefaultPage, pageSize = GetEmployeesQuery.DefaultPageSize },
             result.Value);
+    }
+
+    /// <summary>직원 한 명의 연락처를 수정합니다(전체 교체).</summary>
+    /// <remarks>
+    /// 일괄 업로드로도 갱신할 수 있지만, 전화번호 한 자리를 고치려고 파일 전체를 다시 올리는 것은
+    /// 실제 운용에서 부담이 큽니다. 연락처는 개별 정정이 잦은 데이터라 단건 수정 경로를 제공합니다.
+    /// </remarks>
+    /// <param name="id">직원 식별자(목록 응답의 <c>id</c>).</param>
+    /// <param name="request">교체할 연락처 전체.</param>
+    /// <param name="cancellationToken">취소 토큰.</param>
+    /// <response code="200">수정된 직원 정보.</response>
+    /// <response code="400">입력값이 올바르지 않습니다.</response>
+    /// <response code="404">해당 직원이 없거나 이미 연락망에서 제외되었습니다.</response>
+    /// <response code="409">이메일을 다른 직원이 사용 중입니다.</response>
+    [HttpPut("{id:int}")]
+    [ProducesResponseType(typeof(EmployeeDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<EmployeeDto>> UpdateEmployee(
+        int id,
+        [FromBody] UpdateEmployeeRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await commandDispatcher.SendAsync(
+            new UpdateEmployeeCommand(id, request.Name, request.Email, request.Tel, request.Joined),
+            cancellationToken);
+
+        return result.IsSuccess
+            ? Ok(result.Value)
+            : ApiResults.Problem(result, HttpContext);
+    }
+
+    /// <summary>직원을 연락망에서 제외합니다.</summary>
+    /// <remarks>
+    /// 물리 삭제가 아니라 제외 표시(soft delete)입니다. 연락망에서 사람이 빠진 것은
+    /// 기록해야 할 사건이고, 오삭제 복구와 감사 추적이 가능해야 하기 때문입니다.
+    /// 같은 이메일로 다시 업로드하면 복구됩니다.
+    /// </remarks>
+    /// <param name="id">직원 식별자.</param>
+    /// <param name="cancellationToken">취소 토큰.</param>
+    /// <response code="204">제외 완료.</response>
+    /// <response code="404">해당 직원이 없거나 이미 제외되었습니다.</response>
+    [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteEmployee(int id, CancellationToken cancellationToken)
+    {
+        var result = await commandDispatcher.SendAsync(new DeleteEmployeeCommand(id), cancellationToken);
+
+        return result.IsSuccess
+            ? NoContent()
+            : ApiResults.Problem(result, HttpContext);
     }
 
     /// <summary>

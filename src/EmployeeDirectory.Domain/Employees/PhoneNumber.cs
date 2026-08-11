@@ -55,6 +55,13 @@ public sealed record PhoneNumber
 
     public override string ToString() => Formatted;
 
+    /// <summary>
+    /// 검색어처럼 "번호가 아닐 수도 있는" 입력에서 숫자만 뽑는다.
+    /// 저장 값이 숫자열이므로, 사용자가 <c>010-1234</c> 로 검색해도 매칭되게 하려면 이 정규화가 필요하다.
+    /// </summary>
+    public static string DigitsOf(string? input)
+        => string.IsNullOrEmpty(input) ? string.Empty : new string(input.Where(char.IsAsciiDigit).ToArray());
+
     /// <summary>국가번호(+82)와 구분자를 제거해 국내 표기 숫자열로 만든다.</summary>
     private static string Normalize(string input)
     {

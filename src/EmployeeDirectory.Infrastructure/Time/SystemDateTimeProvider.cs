@@ -12,6 +12,8 @@ internal sealed class SystemDateTimeProvider : IDateTimeProvider
 
     public DateOnly Today => DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, KoreaTimeZone));
 
+    public DateTimeOffset UtcNow => DateTimeOffset.UtcNow;
+
     private static TimeZoneInfo ResolveKoreaTimeZone()
     {
         // Windows 와 Linux 의 시간대 ID 가 달라 둘 다 시도한다.

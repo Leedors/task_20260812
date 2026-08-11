@@ -48,7 +48,8 @@ internal sealed class DatabaseInitializer(
             return;
         }
 
-        if (await dbContext.Employees.AnyAsync(cancellationToken).ConfigureAwait(false))
+        // 제외(soft delete)된 직원만 남아 있는 경우에도 이미 운영된 DB 이므로 시드를 다시 넣지 않는다.
+        if (await dbContext.Employees.IgnoreQueryFilters().AnyAsync(cancellationToken).ConfigureAwait(false))
         {
             logger.LogInformation("이미 데이터가 존재하여 시드를 건너뜁니다.");
             return;
