@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>EmployeeDirectory.Application</RootNamespace>
+    <AssemblyName>EmployeeDirectory.Application</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EmployeeDirectory.Domain\EmployeeDirectory.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- DI/로깅은 "추상화 패키지"에만 의존한다. 구현체(호스팅) 선택은 Api 계층의 몫. -->
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="EmployeeDirectory.UnitTests" />
+    <InternalsVisibleTo Include="EmployeeDirectory.IntegrationTests" />
+  </ItemGroup>
+
+</Project>

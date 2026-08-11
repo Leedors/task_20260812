@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <RootNamespace>EmployeeDirectory.Api</RootNamespace>
+    <AssemblyName>EmployeeDirectory.Api</AssemblyName>
+    <UserSecretsId>employee-directory-api</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EmployeeDirectory.Application\EmployeeDirectory.Application.csproj" />
+    <ProjectReference Include="..\EmployeeDirectory.Infrastructure\EmployeeDirectory.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Swashbuckle.AspNetCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 저장소 루트의 샘플 데이터를 실행 디렉터리로 복사한다(최초 실행 시 시드 용도). -->
+    <Content Include="..\..\samples\**\*.*"
+             Link="samples\%(RecursiveDir)%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="EmployeeDirectory.IntegrationTests" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,48 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = crlf
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{json,yml,yaml,csv,md}]
+indent_size = 2
+
+[*.{csproj,props,targets}]
+indent_size = 2
+
+[*.cs]
+# using 정렬
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+
+# 네임스페이스는 file-scoped 로 통일
+csharp_style_namespace_declarations = file_scoped:warning
+
+# var 사용 정책: 타입이 명확한 경우에만
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = false:suggestion
+
+# 표현식 본문
+csharp_style_expression_bodied_methods = when_on_single_line:suggestion
+csharp_style_expression_bodied_properties = true:suggestion
+
+# 최신 언어 기능 선호
+csharp_style_prefer_primary_constructors = true:suggestion
+csharp_prefer_braces = true:warning
+csharp_style_prefer_pattern_matching = true:suggestion
+
+# 접근 제한자 명시
+dotnet_style_require_accessibility_modifiers = for_non_interface_members:warning
+
+# 네이밍: private 필드는 _camelCase
+dotnet_naming_rule.private_fields_underscore.symbols = private_fields
+dotnet_naming_rule.private_fields_underscore.style = underscore_prefix
+dotnet_naming_rule.private_fields_underscore.severity = suggestion
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_style.underscore_prefix.capitalization = camel_case
+dotnet_naming_style.underscore_prefix.required_prefix = _

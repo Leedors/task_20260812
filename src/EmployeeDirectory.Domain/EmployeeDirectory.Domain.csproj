@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>EmployeeDirectory.Domain</RootNamespace>
+    <AssemblyName>EmployeeDirectory.Domain</AssemblyName>
+  </PropertyGroup>
+
+  <!--
+    Domain 은 어떤 외부 패키지에도 의존하지 않는다.
+    (프레임워크/ORM 이 바뀌어도 비즈니스 규칙은 그대로 유지되도록)
+  -->
+
+</Project>

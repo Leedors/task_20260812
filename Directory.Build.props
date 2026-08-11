@@ -1,0 +1,33 @@
+<Project>
+
+  <PropertyGroup>
+    <!--
+      과제 요구사항은 ".NET 8 이상". LTS 인 net8.0 을 타겟으로 삼았다.
+      net8.0 은 .NET 8/9/10 어느 SDK 에서도 빌드되지만, net9.0 이상은 .NET 8 SDK 에서 빌드되지 않는다.
+      "clone 후 빌드가 반드시 성공해야 한다"는 조건에서는 하위 호환이 넓은 쪽이 옳다고 판단했다.
+      (실행 환경 호환은 Api 프로젝트의 RollForward 설정 참고)
+    -->
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>12.0</LangVersion>
+
+    <!--
+      .NET 8 런타임이 없고 9/10 만 설치된 환경에서도 실행/테스트가 가능하도록 상위 메이저로 롤포워드한다.
+      과제에서 가장 큰 위험은 "결과를 확인할 수 없는 것"이므로 실행 호환성을 최대한 넓혔다.
+      (알려진 제약은 README 의 "실행 환경" 항목 참고)
+    -->
+    <RollForward>LatestMajor</RollForward>
+
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- 공개 멤버 XML 주석 누락 경고는 비활성화 (Swagger 문서화에 쓰는 주석만 선별 작성) -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+
+    <!-- 미리보기 SDK 사용 시 뜨는 안내 메시지 억제 -->
+    <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,67 @@
+### Employee Directory API 예제
+### Visual Studio / Rider / VS Code(REST Client) 에서 각 요청 위의 "Send Request" 로 실행할 수 있습니다.
+
+@host = http://localhost:5080
+
+### 1. 직원 목록 조회 (기본 페이징)
+GET {{host}}/api/employee
+
+### 2. 직원 목록 조회 (페이지 지정)
+GET {{host}}/api/employee?page=1&pageSize=3
+
+### 3. 직원 상세 조회
+GET {{host}}/api/employee/홍길동
+
+### 4. 없는 이름 → 404 problem+json
+GET {{host}}/api/employee/없는사람
+
+### 5. 잘못된 페이징 파라미터 → 400
+GET {{host}}/api/employee?page=0&pageSize=10
+
+### 6. [필수 ③] body 에 csv 직접 입력 (<textarea>)
+POST {{host}}/api/employee
+Content-Type: text/csv
+
+임꺽정, kkeokjeong@example.com, 01044445555, 2019.06.01
+장길산, gilsan@example.com, 010-6666-7777, 2020.02.14
+
+### 7. [필수 ④] body 에 json 직접 입력 (<textarea>)
+POST {{host}}/api/employee
+Content-Type: application/json
+
+[
+  { "name": "정약용", "email": "yakyong@example.com", "tel": "010-8888-9999", "joined": "2018-04-04" }
+]
+
+### 8. Content-Type 이 모호해도 내용으로 형식을 추론
+POST {{host}}/api/employee
+Content-Type: text/plain
+
+허준, jun.heo@example.com, 01011112222, 2017.03.03
+
+### 9. csv 헤더가 있는 경우 (컬럼 순서가 달라도 됨)
+POST {{host}}/api/employee
+Content-Type: text/csv
+
+입사일,전화번호,이메일,이름
+2016.09.09,010-3333-4444,sejong@example.com,이도
+
+### 10. 검증 실패 → 400 + 실패 항목 전체 반환 (아무것도 저장되지 않음)
+POST {{host}}/api/employee
+Content-Type: text/csv
+
+정상직원, ok@example.com, 01012341234, 2018.01.01
+이메일오류, 이메일아님, 01012341234, 2018.01.01
+전화번호오류, tel@example.com, 123, 2018.01.01
+미래입사일, future@example.com, 01012341234, 2099.01.01
+
+### 11. 같은 이메일 재업로드 → created 0 / updated 1
+POST {{host}}/api/employee
+Content-Type: text/csv
+
+정약용(직책변경), yakyong@example.com, 010-8888-0000, 2018-04-04
+
+### 12. [필수 ①②] 파일 업로드
+### 파일 업로드는 multipart 이므로 Swagger UI(/swagger) 또는 curl 사용을 권장합니다.
+###   curl -F "file=@samples/employees.csv;type=text/csv"        {{host}}/api/employee
+###   curl -F "file=@samples/employees.json;type=application/json" {{host}}/api/employee
