@@ -41,7 +41,7 @@ public sealed class EmployeeLifecycleEndpointTests(EmployeeApiFactory factory) :
 
         // 등록 시각은 그대로, 수정 시각만 앞으로 간다.
         updated.CreatedAt.Should().Be(created.CreatedAt);
-        updated.UpdatedAt.Should().BeOnOrAfter(created.UpdatedAt);
+        updated.UpdatedAt.Should().BeAfter(created.UpdatedAt);
     }
 
     [Fact]
@@ -62,7 +62,10 @@ public sealed class EmployeeLifecycleEndpointTests(EmployeeApiFactory factory) :
         var updated = await response.ReadAsync<EmployeeResponse>();
 
         updated.Tel.Should().Be("010-8888-7777");
-        updated.UpdatedAt.Should().BeOnOrAfter(created.UpdatedAt);
+
+        // BeOnOrAfter 로 두면 갱신이 아예 안 돼도 통과한다.
+        // 이 테스트의 목적은 "owned type 만 바뀌어도 갱신되는가" 이므로 반드시 BeAfter 여야 한다.
+        updated.UpdatedAt.Should().BeAfter(created.UpdatedAt);
     }
 
     [Fact]

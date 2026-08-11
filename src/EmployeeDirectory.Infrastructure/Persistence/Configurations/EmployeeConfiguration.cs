@@ -50,8 +50,9 @@ internal sealed class EmployeeConfiguration : IEntityTypeConfiguration<Employee>
                 .HasMaxLength(20)
                 .IsRequired();
 
-            // 표시용 파생 값은 저장하지 않는다.
-            tel.Ignore(value => value.Formatted);
+            // Formatted / Masked 같은 계산 프로퍼티는 setter 도 backing field 도 없어서
+            // EF 가 매핑 대상으로 삼지 않는다. Ignore() 를 따로 호출할 필요가 없다.
+            // (생성된 employees 테이블에 해당 컬럼이 없는 것으로 확인)
         });
 
         builder.Navigation(employee => employee.Email).IsRequired();
