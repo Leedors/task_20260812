@@ -27,8 +27,10 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: SDK 버전 확인
-        run: dotnet --list-sdks
+      - name: SDK · 런타임 확인
+        run: |
+          dotnet --list-sdks
+          dotnet --list-runtimes
 
       - name: 패키지 복원
         run: dotnet restore EmployeeDirectory.sln
@@ -38,6 +40,17 @@ jobs:
 
       - name: 테스트 (단위 + 통합)
         run: dotnet test EmployeeDirectory.sln --no-build -c Release --logger "trx;LogFileName=test-results.trx"
+        env:
+          # 이 저장소는 net8.0 을 타겟으로 하고, .NET 8 런타임이 없는 환경에서도 앱이 뜨도록
+          # RollForward=LatestMajor 를 켜 두었다(README 11절).
+          #
+          # 그런데 러너에는 상위 런타임이 함께 설치돼 있어서, 그대로 두면 테스트 호스트가
+          # .NET 9/10 으로 올라간다. Microsoft.AspNetCore.Mvc.Testing 8.x 의 테스트 서버는
+          # .NET 9 부터 바뀐 PipeWriter.UnflushedBytes 규약을 구현하지 않아 통합 테스트가 깨진다.
+          #
+          # CI 는 "선언한 타겟에서 동작하는가"를 봐야 하므로 8.0 계열로 고정한다.
+          # (앱 실행 시의 롤포워드 동작에는 영향을 주지 않는다)
+          DOTNET_ROLL_FORWARD: LatestPatch
 
       - name: 테스트 결과 업로드
         if: always()
