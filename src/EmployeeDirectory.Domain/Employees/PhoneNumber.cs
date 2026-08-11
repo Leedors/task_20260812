@@ -27,6 +27,20 @@ public sealed record PhoneNumber
     /// <summary>하이픈이 포함된 표시용 값 (예: <c>010-7531-2468</c>).</summary>
     public string Formatted => Format(Value);
 
+    /// <summary>로그·외부 노출용 마스킹 값 (예: <c>010-****-2468</c>).</summary>
+    /// <remarks>가운데 국번만 가린다. 뒤 네 자리는 남겨야 장애 추적에서 사람을 구분할 수 있다.</remarks>
+    public string Masked
+    {
+        get
+        {
+            var parts = Formatted.Split('-');
+
+            return parts.Length == 3
+                ? $"{parts[0]}-{new string('*', parts[1].Length)}-{parts[2]}"
+                : new string('*', Formatted.Length);
+        }
+    }
+
     public static Result<PhoneNumber> Create(string? input)
     {
         var trimmed = input?.Trim();

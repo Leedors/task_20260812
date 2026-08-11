@@ -45,7 +45,9 @@ public sealed class EmployeeController(
         [FromQuery] string? q = null,
         CancellationToken cancellationToken = default)
     {
-        var result = await queryDispatcher.SendAsync(new GetEmployeesQuery(page, pageSize, q), cancellationToken);
+        var result = await queryDispatcher.QueryAsync<GetEmployeesQuery, PagedResult<EmployeeDto>>(
+            new GetEmployeesQuery(page, pageSize, q),
+            cancellationToken);
 
         return result.IsSuccess
             ? Ok(result.Value)
@@ -64,7 +66,9 @@ public sealed class EmployeeController(
         string name,
         CancellationToken cancellationToken)
     {
-        var result = await queryDispatcher.SendAsync(new GetEmployeeByNameQuery(name), cancellationToken);
+        var result = await queryDispatcher.QueryAsync<GetEmployeeByNameQuery, EmployeeDto>(
+            new GetEmployeeByNameQuery(name),
+            cancellationToken);
 
         return result.IsSuccess
             ? Ok(result.Value)
@@ -96,7 +100,7 @@ public sealed class EmployeeController(
             return ApiResults.Problem(payload, HttpContext);
         }
 
-        var result = await commandDispatcher.SendAsync(
+        var result = await commandDispatcher.SendAsync<RegisterEmployeesCommand, RegisterEmployeesResult>(
             new RegisterEmployeesCommand(payload.Value),
             cancellationToken);
 
@@ -133,7 +137,7 @@ public sealed class EmployeeController(
         [FromBody] UpdateEmployeeRequest request,
         CancellationToken cancellationToken)
     {
-        var result = await commandDispatcher.SendAsync(
+        var result = await commandDispatcher.SendAsync<UpdateEmployeeCommand, EmployeeDto>(
             new UpdateEmployeeCommand(id, request.Name, request.Email, request.Tel, request.Joined),
             cancellationToken);
 
@@ -157,7 +161,9 @@ public sealed class EmployeeController(
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteEmployee(int id, CancellationToken cancellationToken)
     {
-        var result = await commandDispatcher.SendAsync(new DeleteEmployeeCommand(id), cancellationToken);
+        var result = await commandDispatcher.SendAsync<DeleteEmployeeCommand, Unit>(
+            new DeleteEmployeeCommand(id),
+            cancellationToken);
 
         return result.IsSuccess
             ? NoContent()

@@ -1,6 +1,7 @@
 using EmployeeDirectory.Application;
 using EmployeeDirectory.Application.Abstractions.Messaging;
 using EmployeeDirectory.Application.Abstractions.Persistence;
+using EmployeeDirectory.Application.Employees.Dtos;
 using EmployeeDirectory.Application.Employees.Queries.GetEmployees;
 using EmployeeDirectory.UnitTests.TestDoubles;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,10 +33,12 @@ public sealed class DispatcherTests
         await using var provider = BuildProvider();
         var dispatcher = provider.GetRequiredService<IQueryDispatcher>();
 
-        var result = await dispatcher.SendAsync(new GetEmployeesQuery(1, 10), default);
+        var result = await dispatcher.QueryAsync<GetEmployeesQuery, PagedResult<EmployeeDto>>(
+            new GetEmployeesQuery(1, 10),
+            default);
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal(1, result.Value.Page);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Page.Should().Be(1);
     }
 
     [Fact]
@@ -45,24 +48,29 @@ public sealed class DispatcherTests
         var dispatcher = provider.GetRequiredService<IQueryDispatcher>();
 
         // pageSize 0 은 핸들러에 도달하기 전에 ValidationBehavior 가 걸러야 한다.
-        var result = await dispatcher.SendAsync(new GetEmployeesQuery(1, 0), default);
+        var result = await dispatcher.QueryAsync<GetEmployeesQuery, PagedResult<EmployeeDto>>(
+            new GetEmployeesQuery(1, 0),
+            default);
 
-        Assert.True(result.IsFailure);
-        Assert.Equal("paging.page_size_invalid", result.FirstError.Code);
+        result.IsFailure.Should().BeTrue();
+        result.FirstError.Code.Should().Be("paging.page_size_invalid");
     }
 
     [Fact]
     public async Task 같은_쿼리를_반복_호출해도_동작이_동일하다()
     {
-        // 디스패처가 요청 타입별 래퍼를 캐시하므로 재사용 경로도 확인한다.
         await using var provider = BuildProvider();
         var dispatcher = provider.GetRequiredService<IQueryDispatcher>();
 
-        var first = await dispatcher.SendAsync(new GetEmployeesQuery(1, 5), default);
-        var second = await dispatcher.SendAsync(new GetEmployeesQuery(2, 5), default);
+        var first = await dispatcher.QueryAsync<GetEmployeesQuery, PagedResult<EmployeeDto>>(
+            new GetEmployeesQuery(1, 5),
+            default);
+        var second = await dispatcher.QueryAsync<GetEmployeesQuery, PagedResult<EmployeeDto>>(
+            new GetEmployeesQuery(2, 5),
+            default);
 
-        Assert.True(first.IsSuccess);
-        Assert.True(second.IsSuccess);
-        Assert.Equal(2, second.Value.Page);
+        first.IsSuccess.Should().BeTrue();
+        second.IsSuccess.Should().BeTrue();
+        second.Value.Page.Should().Be(2);
     }
 }

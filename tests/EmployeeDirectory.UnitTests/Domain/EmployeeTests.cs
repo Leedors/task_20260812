@@ -11,11 +11,11 @@ public sealed class EmployeeTests
     {
         var result = Employee.Create("김철수", "charles@clovf.com", "01075312468", new DateOnly(2018, 3, 7), Today);
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal("김철수", result.Value.Name);
-        Assert.Equal("charles@clovf.com", result.Value.Email.Value);
-        Assert.Equal("010-7531-2468", result.Value.Tel.Formatted);
-        Assert.Equal(new DateOnly(2018, 3, 7), result.Value.Joined);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Name.Should().Be("김철수");
+        result.Value.Email.Value.Should().Be("charles@clovf.com");
+        result.Value.Tel.Formatted.Should().Be("010-7531-2468");
+        result.Value.Joined.Should().Be(new DateOnly(2018, 3, 7));
     }
 
     [Fact]
@@ -23,8 +23,8 @@ public sealed class EmployeeTests
     {
         var result = Employee.Create("  홍길동  ", "kildong.hong@clovf.com", "01012345678", new DateOnly(2015, 8, 15), Today);
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal("홍길동", result.Value.Name);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Name.Should().Be("홍길동");
     }
 
     [Fact]
@@ -32,8 +32,8 @@ public sealed class EmployeeTests
     {
         var result = Employee.Create(" ", "charles@clovf.com", "01075312468", new DateOnly(2018, 3, 7), Today);
 
-        Assert.True(result.IsFailure);
-        Assert.Contains(result.Errors, error => error.Code == "employee.name_required");
+        result.IsFailure.Should().BeTrue();
+        result.Errors.Should().Contain(error => error.Code == "employee.name_required");
     }
 
     [Fact]
@@ -41,8 +41,8 @@ public sealed class EmployeeTests
     {
         var result = Employee.Create("김철수", "charles@clovf.com", "01075312468", Today.AddDays(1), Today);
 
-        Assert.True(result.IsFailure);
-        Assert.Contains(result.Errors, error => error.Code == "employee.joined_in_future");
+        result.IsFailure.Should().BeTrue();
+        result.Errors.Should().Contain(error => error.Code == "employee.joined_in_future");
     }
 
     [Fact]
@@ -50,7 +50,7 @@ public sealed class EmployeeTests
     {
         var result = Employee.Create("김철수", "charles@clovf.com", "01075312468", Today, Today);
 
-        Assert.True(result.IsSuccess);
+        result.IsSuccess.Should().BeTrue();
     }
 
     [Fact]
@@ -58,8 +58,8 @@ public sealed class EmployeeTests
     {
         var result = Employee.Create("김철수", "charles@clovf.com", "01075312468", joined: null, Today);
 
-        Assert.True(result.IsFailure);
-        Assert.Contains(result.Errors, error => error.Code == "employee.joined_required");
+        result.IsFailure.Should().BeTrue();
+        result.Errors.Should().Contain(error => error.Code == "employee.joined_required");
     }
 
     [Fact]
@@ -67,12 +67,15 @@ public sealed class EmployeeTests
     {
         var result = Employee.Create(null, "bad-email", "123", Today.AddYears(1), Today);
 
-        Assert.True(result.IsFailure);
-        Assert.Equal(4, result.Errors.Count);
-        Assert.Contains(result.Errors, error => error.Code == "employee.name_required");
-        Assert.Contains(result.Errors, error => error.Code == "employee.email_invalid");
-        Assert.Contains(result.Errors, error => error.Code == "employee.tel_invalid");
-        Assert.Contains(result.Errors, error => error.Code == "employee.joined_in_future");
+        result.IsFailure.Should().BeTrue();
+        result.Errors.Should().HaveCount(4);
+        result.Errors.Select(error => error.Code).Should().BeEquivalentTo(
+        [
+            "employee.name_required",
+            "employee.email_invalid",
+            "employee.tel_invalid",
+            "employee.joined_in_future"
+        ]);
     }
 
     [Fact]
@@ -82,10 +85,10 @@ public sealed class EmployeeTests
 
         var result = employee.Replace("김철수", "new@clovf.com", "010-0000-1111", new DateOnly(2019, 1, 1), Today);
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal("new@clovf.com", employee.Email.Value);
-        Assert.Equal("010-0000-1111", employee.Tel.Formatted);
-        Assert.Equal(new DateOnly(2019, 1, 1), employee.Joined);
+        result.IsSuccess.Should().BeTrue();
+        employee.Email.Value.Should().Be("new@clovf.com");
+        employee.Tel.Formatted.Should().Be("010-0000-1111");
+        employee.Joined.Should().Be(new DateOnly(2019, 1, 1));
     }
 
     [Fact]
@@ -95,9 +98,9 @@ public sealed class EmployeeTests
 
         var result = employee.Replace("김철수", "이메일아님", "01075312468", new DateOnly(2018, 3, 7), Today);
 
-        Assert.True(result.IsFailure);
+        result.IsFailure.Should().BeTrue();
         // 검증을 먼저 끝내고 한 번에 반영하므로 부분 적용된 상태가 남지 않는다.
-        Assert.Equal("charles@clovf.com", employee.Email.Value);
+        employee.Email.Value.Should().Be("charles@clovf.com");
     }
 
     [Fact]
@@ -106,12 +109,12 @@ public sealed class EmployeeTests
         var employee = Employee.Create("김철수", "charles@clovf.com", "01075312468", new DateOnly(2018, 3, 7), Today).Value;
         var deletedAt = new DateTimeOffset(2026, 8, 11, 9, 0, 0, TimeSpan.Zero);
 
-        Assert.False(employee.IsDeleted);
+        employee.IsDeleted.Should().BeFalse();
 
         employee.MarkDeleted(deletedAt);
 
-        Assert.True(employee.IsDeleted);
-        Assert.Equal(deletedAt, employee.DeletedAt);
+        employee.IsDeleted.Should().BeTrue();
+        employee.DeletedAt.Should().Be(deletedAt);
     }
 
     [Fact]
@@ -122,8 +125,8 @@ public sealed class EmployeeTests
 
         employee.Restore();
 
-        Assert.False(employee.IsDeleted);
-        Assert.Null(employee.DeletedAt);
+        employee.IsDeleted.Should().BeFalse();
+        employee.DeletedAt.Should().BeNull();
     }
 
     [Fact]
@@ -134,9 +137,9 @@ public sealed class EmployeeTests
 
         employee.UpdateContact("김철수(변경)", newTel, new DateOnly(2019, 1, 1));
 
-        Assert.Equal("charles@clovf.com", employee.Email.Value);
-        Assert.Equal("김철수(변경)", employee.Name);
-        Assert.Equal("010-0000-1111", employee.Tel.Formatted);
-        Assert.Equal(new DateOnly(2019, 1, 1), employee.Joined);
+        employee.Email.Value.Should().Be("charles@clovf.com");
+        employee.Name.Should().Be("김철수(변경)");
+        employee.Tel.Formatted.Should().Be("010-0000-1111");
+        employee.Joined.Should().Be(new DateOnly(2019, 1, 1));
     }
 }

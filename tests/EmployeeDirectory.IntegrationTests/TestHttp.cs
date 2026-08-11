@@ -31,7 +31,8 @@ internal static class TestHttp
     public static async Task<T> ReadAsync<T>(this HttpResponseMessage response)
     {
         var value = await response.Content.ReadFromJsonAsync<T>(Options);
-        Assert.NotNull(value);
+
+        value.Should().NotBeNull();
         return value!;
     }
 }

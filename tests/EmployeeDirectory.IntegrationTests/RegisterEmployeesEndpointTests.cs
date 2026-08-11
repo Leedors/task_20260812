@@ -19,17 +19,17 @@ public sealed class RegisterEmployeesEndpointTests(EmployeeApiFactory factory) :
 
         var response = await _client.PostFileAsync(Csv, "employees.csv", "text/csv");
 
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
 
         var body = await response.ReadAsync<RegisterResponse>();
-        Assert.Equal("csv", body.Format);
-        Assert.Equal(2, body.Created);
-        Assert.Equal(0, body.Updated);
+        body.Format.Should().Be("csv");
+        body.Created.Should().Be(2);
+        body.Updated.Should().Be(0);
 
         // 실제로 조회까지 되어야 "동작"이라고 할 수 있다.
         var detail = await _client.GetAsync("/api/employee/파일씨에스브이");
-        Assert.Equal(HttpStatusCode.OK, detail.StatusCode);
-        Assert.Equal("010-1111-0001", (await detail.ReadAsync<EmployeeResponse>()).Tel);
+        detail.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await detail.ReadAsync<EmployeeResponse>()).Tel.Should().Be("010-1111-0001");
     }
 
     [Fact]
@@ -43,11 +43,11 @@ public sealed class RegisterEmployeesEndpointTests(EmployeeApiFactory factory) :
 
         var response = await _client.PostFileAsync(Json, "employees.json", "application/json");
 
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
 
         var body = await response.ReadAsync<RegisterResponse>();
-        Assert.Equal("json", body.Format);
-        Assert.Equal(1, body.Created);
+        body.Format.Should().Be("json");
+        body.Created.Should().Be(1);
     }
 
     [Fact]
@@ -57,8 +57,8 @@ public sealed class RegisterEmployeesEndpointTests(EmployeeApiFactory factory) :
 
         var response = await _client.PostRawAsync(Csv, "text/csv");
 
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        Assert.Equal(1, (await response.ReadAsync<RegisterResponse>()).Created);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        (await response.ReadAsync<RegisterResponse>()).Created.Should().Be(1);
     }
 
     [Fact]
@@ -68,8 +68,8 @@ public sealed class RegisterEmployeesEndpointTests(EmployeeApiFactory factory) :
 
         var response = await _client.PostRawAsync(Json, "application/json");
 
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        Assert.Equal(1, (await response.ReadAsync<RegisterResponse>()).Created);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        (await response.ReadAsync<RegisterResponse>()).Created.Should().Be(1);
     }
 
     [Fact]
@@ -79,8 +79,8 @@ public sealed class RegisterEmployeesEndpointTests(EmployeeApiFactory factory) :
 
         var response = await _client.PostRawAsync(Json, "text/plain");
 
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        Assert.Equal("json", (await response.ReadAsync<RegisterResponse>()).Format);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        (await response.ReadAsync<RegisterResponse>()).Format.Should().Be("json");
     }
 
     [Fact]
@@ -90,17 +90,17 @@ public sealed class RegisterEmployeesEndpointTests(EmployeeApiFactory factory) :
         const string Second = "중복확인변경, upsert@clovf.com, 010-6666-9999, 2018.03.07";
 
         var created = await _client.PostRawAsync(First, "text/csv");
-        Assert.Equal(1, (await created.ReadAsync<RegisterResponse>()).Created);
+        (await created.ReadAsync<RegisterResponse>()).Created.Should().Be(1);
 
         var updated = await _client.PostRawAsync(Second, "text/csv");
         var body = await updated.ReadAsync<RegisterResponse>();
 
-        Assert.Equal(HttpStatusCode.Created, updated.StatusCode);
-        Assert.Equal(0, body.Created);
-        Assert.Equal(1, body.Updated);
+        updated.StatusCode.Should().Be(HttpStatusCode.Created);
+        body.Created.Should().Be(0);
+        body.Updated.Should().Be(1);
 
         var detail = await (await _client.GetAsync("/api/employee/중복확인변경")).ReadAsync<EmployeeResponse>();
-        Assert.Equal("010-6666-9999", detail.Tel);
+        detail.Tel.Should().Be("010-6666-9999");
     }
 
     [Fact]
@@ -113,15 +113,15 @@ public sealed class RegisterEmployeesEndpointTests(EmployeeApiFactory factory) :
 
         var response = await _client.PostRawAsync(Csv, "text/csv");
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
         var problem = await response.ReadAsync<ProblemResponse>();
-        Assert.NotNull(problem.Errors);
-        Assert.Contains(problem.Errors!, error => error.Code == "employee.email_invalid");
+        problem.Errors.Should().NotBeNull();
+        problem.Errors!.Should().Contain(error => error.Code == "employee.email_invalid");
 
         // 같은 요청의 정상 행도 저장되지 않아야 한다(부분 성공 금지).
         var detail = await _client.GetAsync("/api/employee/정상직원");
-        Assert.Equal(HttpStatusCode.NotFound, detail.StatusCode);
+        detail.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
     [Fact]
@@ -129,8 +129,8 @@ public sealed class RegisterEmployeesEndpointTests(EmployeeApiFactory factory) :
     {
         var response = await _client.PostRawAsync("   ", "text/csv");
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Equal("payload.empty", (await response.ReadAsync<ProblemResponse>()).Errors![0].Code);
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await response.ReadAsync<ProblemResponse>()).Errors![0].Code.Should().Be("payload.empty");
     }
 
     [Fact]
@@ -138,7 +138,7 @@ public sealed class RegisterEmployeesEndpointTests(EmployeeApiFactory factory) :
     {
         var response = await _client.PostRawAsync("""[{"name":"깨짐",]""", "application/json");
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Equal("json.malformed", (await response.ReadAsync<ProblemResponse>()).Errors![0].Code);
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await response.ReadAsync<ProblemResponse>()).Errors![0].Code.Should().Be("json.malformed");
     }
 }

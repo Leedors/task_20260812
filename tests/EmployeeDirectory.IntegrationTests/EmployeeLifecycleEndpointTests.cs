@@ -6,19 +6,14 @@ namespace EmployeeDirectory.IntegrationTests;
 /// <summary>
 /// 단건 수정/제외(soft delete)와 복구까지의 수명주기를 실제 HTTP 요청으로 검증한다.
 /// </summary>
-public sealed class EmployeeLifecycleEndpointTests(EmployeeApiFactory factory)
-    : IClassFixture<EmployeeApiFactory>, IAsyncLifetime
+public sealed class EmployeeLifecycleEndpointTests(EmployeeApiFactory factory) : IClassFixture<EmployeeApiFactory>
 {
     private readonly HttpClient _client = factory.CreateClient();
-
-    public Task InitializeAsync() => Task.CompletedTask;
-
-    public Task DisposeAsync() => Task.CompletedTask;
 
     private async Task<EmployeeResponse> RegisterAsync(string name, string email, string tel = "010-1111-2222")
     {
         var response = await _client.PostRawAsync($"{name}, {email}, {tel}, 2018.03.07", "text/csv");
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
 
         return await (await _client.GetAsync($"/api/employee/{Uri.EscapeDataString(name)}"))
             .ReadAsync<EmployeeResponse>();
@@ -37,16 +32,16 @@ public sealed class EmployeeLifecycleEndpointTests(EmployeeApiFactory factory)
             joined = "2019-05-05"
         });
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var updated = await response.ReadAsync<EmployeeResponse>();
-        Assert.Equal("수정완료", updated.Name);
-        Assert.Equal("010-3333-4444", updated.Tel);
-        Assert.Equal(new DateOnly(2019, 5, 5), updated.Joined);
+        updated.Name.Should().Be("수정완료");
+        updated.Tel.Should().Be("010-3333-4444");
+        updated.Joined.Should().Be(new DateOnly(2019, 5, 5));
 
         // 등록 시각은 그대로, 수정 시각만 앞으로 간다.
-        Assert.Equal(created.CreatedAt, updated.CreatedAt);
-        Assert.True(updated.UpdatedAt >= created.UpdatedAt);
+        updated.CreatedAt.Should().Be(created.CreatedAt);
+        updated.UpdatedAt.Should().BeOnOrAfter(created.UpdatedAt);
     }
 
     [Fact]
@@ -66,8 +61,8 @@ public sealed class EmployeeLifecycleEndpointTests(EmployeeApiFactory factory)
 
         var updated = await response.ReadAsync<EmployeeResponse>();
 
-        Assert.Equal("010-8888-7777", updated.Tel);
-        Assert.True(updated.UpdatedAt >= created.UpdatedAt);
+        updated.Tel.Should().Be("010-8888-7777");
+        updated.UpdatedAt.Should().BeOnOrAfter(created.UpdatedAt);
     }
 
     [Fact]
@@ -81,8 +76,8 @@ public sealed class EmployeeLifecycleEndpointTests(EmployeeApiFactory factory)
             joined = "2018-03-07"
         });
 
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-        Assert.Equal("employee.not_found", (await response.ReadAsync<ProblemResponse>()).Errors![0].Code);
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        (await response.ReadAsync<ProblemResponse>()).Errors![0].Code.Should().Be("employee.not_found");
     }
 
     [Fact]
@@ -99,8 +94,8 @@ public sealed class EmployeeLifecycleEndpointTests(EmployeeApiFactory factory)
             joined = "2018-03-07"
         });
 
-        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
-        Assert.Equal("employee.email_taken", (await response.ReadAsync<ProblemResponse>()).Errors![0].Code);
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await response.ReadAsync<ProblemResponse>()).Errors![0].Code.Should().Be("employee.email_taken");
     }
 
     [Fact]
@@ -116,11 +111,11 @@ public sealed class EmployeeLifecycleEndpointTests(EmployeeApiFactory factory)
             joined = "2018-03-07"
         });
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
         var problem = await response.ReadAsync<ProblemResponse>();
-        Assert.Contains(problem.Errors!, error => error.Code == "employee.name_required");
-        Assert.Contains(problem.Errors!, error => error.Code == "employee.tel_invalid");
+        problem.Errors!.Should().Contain(error => error.Code == "employee.name_required");
+        problem.Errors!.Should().Contain(error => error.Code == "employee.tel_invalid");
     }
 
     [Fact]
@@ -129,14 +124,14 @@ public sealed class EmployeeLifecycleEndpointTests(EmployeeApiFactory factory)
         var created = await RegisterAsync("제외대상", "delete-target@clovf.com");
 
         var deleted = await _client.DeleteAsync($"/api/employee/{created.Id}");
-        Assert.Equal(HttpStatusCode.NoContent, deleted.StatusCode);
+        deleted.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         var detail = await _client.GetAsync("/api/employee/제외대상");
-        Assert.Equal(HttpStatusCode.NotFound, detail.StatusCode);
+        detail.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
         var list = await (await _client.GetAsync("/api/employee?page=1&pageSize=200&q=delete-target"))
             .ReadAsync<PagedResponse>();
-        Assert.Equal(0, list.TotalCount);
+        list.TotalCount.Should().Be(0);
     }
 
     [Fact]
@@ -147,7 +142,7 @@ public sealed class EmployeeLifecycleEndpointTests(EmployeeApiFactory factory)
         await _client.DeleteAsync($"/api/employee/{created.Id}");
         var second = await _client.DeleteAsync($"/api/employee/{created.Id}");
 
-        Assert.Equal(HttpStatusCode.NotFound, second.StatusCode);
+        second.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
     [Fact]
@@ -160,14 +155,14 @@ public sealed class EmployeeLifecycleEndpointTests(EmployeeApiFactory factory)
             "복구대상, restore-target@clovf.com, 010-5555-6666, 2018.03.07",
             "text/csv");
 
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
 
         var body = await response.ReadAsync<RegisterResponse>();
-        Assert.Equal(0, body.Created);
-        Assert.Equal(0, body.Updated);
-        Assert.Equal(1, body.Restored);
+        body.Created.Should().Be(0);
+        body.Updated.Should().Be(0);
+        body.Restored.Should().Be(1);
 
         var detail = await (await _client.GetAsync("/api/employee/복구대상")).ReadAsync<EmployeeResponse>();
-        Assert.Equal("010-5555-6666", detail.Tel);
+        detail.Tel.Should().Be("010-5555-6666");
     }
 }

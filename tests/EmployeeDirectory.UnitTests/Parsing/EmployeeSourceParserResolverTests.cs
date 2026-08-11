@@ -15,8 +15,8 @@ public sealed class EmployeeSourceParserResolverTests
         // 내용은 csv 처럼 보이지만 json 으로 선언된 경우 → 선언을 신뢰하고 json 파서를 고른다.
         var result = _resolver.Resolve(new EmployeePayload("a,b,c,d", EmployeeSourceFormat.Json));
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal(EmployeeSourceFormat.Json, result.Value.Format);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Format.Should().Be(EmployeeSourceFormat.Json);
     }
 
     [Fact]
@@ -24,8 +24,8 @@ public sealed class EmployeeSourceParserResolverTests
     {
         var result = _resolver.Resolve(new EmployeePayload("""[{"name":"김클로"}]"""));
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal(EmployeeSourceFormat.Json, result.Value.Format);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Format.Should().Be(EmployeeSourceFormat.Json);
     }
 
     [Fact]
@@ -33,8 +33,8 @@ public sealed class EmployeeSourceParserResolverTests
     {
         var result = _resolver.Resolve(new EmployeePayload("김철수, charles@clovf.com, 01075312468, 2018.03.07"));
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal(EmployeeSourceFormat.Csv, result.Value.Format);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Format.Should().Be(EmployeeSourceFormat.Csv);
     }
 
     [Theory]
@@ -44,8 +44,8 @@ public sealed class EmployeeSourceParserResolverTests
     {
         var result = _resolver.Resolve(new EmployeePayload(content));
 
-        Assert.True(result.IsFailure);
-        Assert.Equal("payload.empty", result.FirstError.Code);
+        result.IsFailure.Should().BeTrue();
+        result.FirstError.Code.Should().Be("payload.empty");
     }
 
     [Fact]
@@ -55,7 +55,7 @@ public sealed class EmployeeSourceParserResolverTests
 
         var result = resolver.Resolve(new EmployeePayload("{}", EmployeeSourceFormat.Json));
 
-        Assert.True(result.IsFailure);
-        Assert.Equal("payload.format_unsupported", result.FirstError.Code);
+        result.IsFailure.Should().BeTrue();
+        result.FirstError.Code.Should().Be("payload.format_unsupported");
     }
 }

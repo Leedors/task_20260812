@@ -12,7 +12,7 @@ public sealed class SourceFormatHintTests
     [InlineData("employees", null)]
     [InlineData(null, null)]
     public void 파일명에서_형식을_추론한다(string? fileName, EmployeeSourceFormat? expected)
-        => Assert.Equal(expected, SourceFormatHint.FromFileName(fileName));
+        => SourceFormatHint.FromFileName(fileName).Should().Be(expected);
 
     [Theory]
     [InlineData("text/csv", EmployeeSourceFormat.Csv)]
@@ -23,5 +23,5 @@ public sealed class SourceFormatHintTests
     [InlineData("application/octet-stream", null)]
     [InlineData(null, null)]
     public void ContentType에서_형식을_추론한다(string? contentType, EmployeeSourceFormat? expected)
-        => Assert.Equal(expected, SourceFormatHint.FromContentType(contentType));
+        => SourceFormatHint.FromContentType(contentType).Should().Be(expected);
 }

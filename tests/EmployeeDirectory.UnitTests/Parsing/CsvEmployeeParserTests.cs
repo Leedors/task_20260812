@@ -18,15 +18,11 @@ public sealed class CsvEmployeeParserTests
 
         var result = _parser.Parse(new EmployeePayload(Csv));
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal(3, result.Value.Count);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().HaveCount(3);
 
-        var first = result.Value[0];
-        Assert.Equal("김철수", first.Name);
-        Assert.Equal("charles@clovf.com", first.Email);
-        Assert.Equal("01075312468", first.Tel);
-        Assert.Equal("2018.03.07", first.Joined);
-        Assert.Equal(1, first.Position);
+        result.Value[0].Should().BeEquivalentTo(
+            new EmployeeRecord("김철수", "charles@clovf.com", "01075312468", "2018.03.07", 1));
     }
 
     [Fact]
@@ -39,12 +35,9 @@ public sealed class CsvEmployeeParserTests
 
         var result = _parser.Parse(new EmployeePayload(Csv));
 
-        Assert.True(result.IsSuccess);
-        var record = Assert.Single(result.Value);
-        Assert.Equal("김철수", record.Name);
-        Assert.Equal("charles@clovf.com", record.Email);
-        Assert.Equal("01075312468", record.Tel);
-        Assert.Equal("2018.03.07", record.Joined);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().ContainSingle().Which.Should().BeEquivalentTo(
+            new EmployeeRecord("김철수", "charles@clovf.com", "01075312468", "2018.03.07", 2));
     }
 
     [Fact]
@@ -57,8 +50,8 @@ public sealed class CsvEmployeeParserTests
 
         var result = _parser.Parse(new EmployeePayload(Csv));
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal("김철수", Assert.Single(result.Value).Name);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().ContainSingle().Which.Name.Should().Be("김철수");
     }
 
     [Fact]
@@ -68,8 +61,8 @@ public sealed class CsvEmployeeParserTests
 
         var result = _parser.Parse(new EmployeePayload(Csv));
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal("2018.03.07", Assert.Single(result.Value).Joined);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().ContainSingle().Which.Joined.Should().Be("2018.03.07");
     }
 
     [Fact]
@@ -85,11 +78,10 @@ public sealed class CsvEmployeeParserTests
 
         var result = _parser.Parse(new EmployeePayload(Csv));
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal(2, result.Value.Count);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().HaveCount(2);
         // 건너뛴 줄을 포함한 실제 파일 행 번호가 유지되어야 오류 추적이 가능하다.
-        Assert.Equal(3, result.Value[0].Position);
-        Assert.Equal(5, result.Value[1].Position);
+        result.Value.Select(record => record.Position).Should().Equal(3, 5);
     }
 
     [Fact]
@@ -99,8 +91,8 @@ public sealed class CsvEmployeeParserTests
 
         var result = _parser.Parse(new EmployeePayload(Csv));
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal("김, 철수", Assert.Single(result.Value).Name);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().ContainSingle().Which.Name.Should().Be("김, 철수");
     }
 
     [Fact]
@@ -110,8 +102,8 @@ public sealed class CsvEmployeeParserTests
 
         var result = _parser.Parse(new EmployeePayload(Csv));
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal("김\"철수", Assert.Single(result.Value).Name);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().ContainSingle().Which.Name.Should().Be("김\"철수");
     }
 
     [Fact]
@@ -121,9 +113,9 @@ public sealed class CsvEmployeeParserTests
 
         var result = _parser.Parse(new EmployeePayload(Csv));
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal(2, result.Value.Count);
-        Assert.Equal("김철수", result.Value[0].Name);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().HaveCount(2);
+        result.Value[0].Name.Should().Be("김철수");
     }
 
     [Fact]
@@ -136,10 +128,10 @@ public sealed class CsvEmployeeParserTests
 
         var result = _parser.Parse(new EmployeePayload(Csv));
 
-        Assert.True(result.IsFailure);
-        var error = Assert.Single(result.Errors);
-        Assert.Equal("csv.column_missing", error.Code);
-        Assert.Contains("[2행]", error.Message, StringComparison.Ordinal);
+        result.IsFailure.Should().BeTrue();
+        var error = result.Errors.Should().ContainSingle().Which;
+        error.Code.Should().Be("csv.column_missing");
+        error.Message.Should().Contain("[2행]");
     }
 
     [Fact]
@@ -147,8 +139,8 @@ public sealed class CsvEmployeeParserTests
     {
         var result = _parser.Parse(new EmployeePayload("\n\n   \n"));
 
-        Assert.True(result.IsFailure);
-        Assert.Equal("csv.empty", result.FirstError.Code);
+        result.IsFailure.Should().BeTrue();
+        result.FirstError.Code.Should().Be("csv.empty");
     }
 
     [Fact]
@@ -156,7 +148,7 @@ public sealed class CsvEmployeeParserTests
     {
         var result = _parser.Parse(new EmployeePayload("name,email,tel,joined"));
 
-        Assert.True(result.IsFailure);
-        Assert.Equal("csv.header_only", result.FirstError.Code);
+        result.IsFailure.Should().BeTrue();
+        result.FirstError.Code.Should().Be("csv.header_only");
     }
 }

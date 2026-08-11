@@ -74,7 +74,9 @@ internal sealed class DatabaseInitializer(
             var payload = new EmployeePayload(content, SourceFormatHint.FromFileName(file), Path.GetFileName(file));
 
             var result = await commandDispatcher
-                .SendAsync(new RegisterEmployeesCommand(payload), cancellationToken)
+                .SendAsync<RegisterEmployeesCommand, RegisterEmployeesResult>(
+                    new RegisterEmployeesCommand(payload),
+                    cancellationToken)
                 .ConfigureAwait(false);
 
             if (result.IsSuccess)
@@ -88,10 +90,11 @@ internal sealed class DatabaseInitializer(
             else
             {
                 // 시드 실패로 애플리케이션 기동을 막지는 않는다. API 자체는 정상 동작해야 하기 때문이다.
+                // 오류 메시지에는 원본 데이터(이메일·전화번호)가 들어 있으므로 코드만 남긴다.
                 logger.LogWarning(
-                    "시드 적재 실패: {File} - {Errors}",
+                    "시드 적재 실패: {File} - {ErrorCodes}",
                     Path.GetFileName(file),
-                    string.Join(" | ", result.Errors.Take(5)));
+                    string.Join(", ", result.Errors.Select(error => error.Code).Distinct().Take(5)));
             }
         }
     }

@@ -35,12 +35,14 @@ public sealed class LoggingBehavior<TRequest, TResponse>(ILogger<LoggingBehavior
             }
             else
             {
+                // 오류 메시지에는 잘못된 이메일·전화번호가 그대로 들어 있다.
+                // 로그에는 분류가 가능한 코드만 남기고, 상세 메시지는 응답(요청자)에게만 돌려준다.
                 logger.LogWarning(
-                    "{RequestName} 처리 실패 ({Elapsed:0.##}ms) - {ErrorCount}건: {Errors}",
+                    "{RequestName} 처리 실패 ({Elapsed:0.##}ms) - {ErrorCount}건: {ErrorCodes}",
                     requestName,
                     elapsed,
                     result.Errors.Count,
-                    string.Join(" | ", result.Errors.Take(5)));
+                    string.Join(", ", result.Errors.Select(error => error.Code).Distinct().Take(5)));
             }
 
             return result;

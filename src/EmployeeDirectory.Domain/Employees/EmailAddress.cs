@@ -19,6 +19,32 @@ public sealed partial record EmailAddress
 
     public string Value { get; }
 
+    /// <summary>
+    /// 로그·외부 노출용 마스킹 값 (예: <c>ch***@example.com</c>).
+    /// </summary>
+    /// <remarks>
+    /// 로그는 원본 값을 남기기 가장 쉬운 곳이면서, 보존 기간이 길고 접근 통제가 느슨한 곳이다.
+    /// 장애 추적에는 "누구인지 구분되는 정도"면 충분하므로 계정부 앞 두 글자만 남긴다.
+    /// </remarks>
+    public string Masked
+    {
+        get
+        {
+            var separator = Value.IndexOf('@', StringComparison.Ordinal);
+            if (separator <= 0)
+            {
+                return "***";
+            }
+
+            var local = Value[..separator];
+            var domain = Value[separator..];
+
+            return local.Length <= 2
+                ? $"{local[0]}***{domain}"
+                : $"{local[..2]}***{domain}";
+        }
+    }
+
     public static Result<EmailAddress> Create(string? input)
     {
         var trimmed = input?.Trim();

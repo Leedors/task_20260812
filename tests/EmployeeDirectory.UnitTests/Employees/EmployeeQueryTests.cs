@@ -1,7 +1,7 @@
 using EmployeeDirectory.Application.Employees.Dtos;
-using EmployeeDirectory.Domain.Common;
 using EmployeeDirectory.Application.Employees.Queries.GetEmployeeByName;
 using EmployeeDirectory.Application.Employees.Queries.GetEmployees;
+using EmployeeDirectory.Domain.Common;
 using EmployeeDirectory.UnitTests.TestDoubles;
 
 namespace EmployeeDirectory.UnitTests.Employees;
@@ -32,13 +32,13 @@ public sealed class GetEmployeesQueryTests
 
         var result = await handler.HandleAsync(new GetEmployeesQuery(2, 10), default);
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal(10, result.Value.Items.Count);
-        Assert.Equal("직원11", result.Value.Items[0].Name);
-        Assert.Equal(25, result.Value.TotalCount);
-        Assert.Equal(3, result.Value.TotalPages);
-        Assert.True(result.Value.HasPreviousPage);
-        Assert.True(result.Value.HasNextPage);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Items.Should().HaveCount(10);
+        result.Value.Items[0].Name.Should().Be("직원11");
+        result.Value.TotalCount.Should().Be(25);
+        result.Value.TotalPages.Should().Be(3);
+        result.Value.HasPreviousPage.Should().BeTrue();
+        result.Value.HasNextPage.Should().BeTrue();
     }
 
     [Fact]
@@ -48,9 +48,21 @@ public sealed class GetEmployeesQueryTests
 
         var result = await handler.HandleAsync(new GetEmployeesQuery(3, 10), default);
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal(5, result.Value.Items.Count);
-        Assert.False(result.Value.HasNextPage);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Items.Should().HaveCount(5);
+        result.Value.HasNextPage.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task 검색어가_있으면_이름으로_좁힌다()
+    {
+        var handler = new GetEmployeesQueryHandler(_readStore);
+
+        var result = await handler.HandleAsync(new GetEmployeesQuery(1, 10, "직원0"), default);
+
+        result.IsSuccess.Should().BeTrue();
+        // 직원01 ~ 직원09
+        result.Value.TotalCount.Should().Be(9);
     }
 
     [Theory]
@@ -64,7 +76,17 @@ public sealed class GetEmployeesQueryTests
 
         var errors = validator.Validate(new GetEmployeesQuery(page, pageSize));
 
-        Assert.Contains(errors, error => error.Code == expectedCode);
+        errors.Should().Contain(error => error.Code == expectedCode);
+    }
+
+    [Fact]
+    public void 검색어가_너무_길면_검증에_실패한다()
+    {
+        var validator = new GetEmployeesQueryValidator();
+
+        var errors = validator.Validate(new GetEmployeesQuery(1, 20, new string('가', 101)));
+
+        errors.Should().Contain(error => error.Code == "search.keyword_too_long");
     }
 
     [Fact]
@@ -72,7 +94,7 @@ public sealed class GetEmployeesQueryTests
     {
         var validator = new GetEmployeesQueryValidator();
 
-        Assert.Empty(validator.Validate(new GetEmployeesQuery(1, 20)));
+        validator.Validate(new GetEmployeesQuery(1, 20)).Should().BeEmpty();
     }
 }
 
@@ -97,8 +119,8 @@ public sealed class GetEmployeeByNameQueryTests
 
         var result = await handler.HandleAsync(new GetEmployeeByNameQuery("김철수"), default);
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal("charles@clovf.com", result.Value.Email);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Email.Should().Be("charles@clovf.com");
     }
 
     [Fact]
@@ -108,7 +130,7 @@ public sealed class GetEmployeeByNameQueryTests
 
         var result = await handler.HandleAsync(new GetEmployeeByNameQuery("  김철수 "), default);
 
-        Assert.True(result.IsSuccess);
+        result.IsSuccess.Should().BeTrue();
     }
 
     [Fact]
@@ -118,9 +140,9 @@ public sealed class GetEmployeeByNameQueryTests
 
         var result = await handler.HandleAsync(new GetEmployeeByNameQuery("없는사람"), default);
 
-        Assert.True(result.IsFailure);
-        Assert.Equal("employee.not_found", result.FirstError.Code);
-        Assert.Equal(ErrorType.NotFound, result.FirstError.Type);
+        result.IsFailure.Should().BeTrue();
+        result.FirstError.Code.Should().Be("employee.not_found");
+        result.FirstError.Type.Should().Be(ErrorType.NotFound);
     }
 
     [Theory]
@@ -130,7 +152,8 @@ public sealed class GetEmployeeByNameQueryTests
     {
         var validator = new GetEmployeeByNameQueryValidator();
 
-        var error = Assert.Single(validator.Validate(new GetEmployeeByNameQuery(name)));
-        Assert.Equal("employee.name_required", error.Code);
+        var errors = validator.Validate(new GetEmployeeByNameQuery(name));
+
+        errors.Should().ContainSingle().Which.Code.Should().Be("employee.name_required");
     }
 }

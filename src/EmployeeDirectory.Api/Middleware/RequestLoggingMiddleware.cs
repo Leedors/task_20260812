@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Microsoft.AspNetCore.Routing;
 
 namespace EmployeeDirectory.Api.Middleware;
 
@@ -48,12 +49,36 @@ internal sealed class RequestLoggingMiddleware(RequestDelegate next, ILogger<Req
 
             logger.Log(
                 level,
-                "{Method} {Path}{Query} → {StatusCode} ({Elapsed:0.##}ms)",
+                "{Method} {Route}{QueryKeys} → {StatusCode} ({Elapsed:0.##}ms)",
                 context.Request.Method,
-                context.Request.Path.Value,
-                context.Request.QueryString.Value,
+                ResolveRoute(context),
+                ResolveQueryKeys(context),
                 context.Response.StatusCode,
                 elapsed);
         }
     }
+
+    /// <summary>
+    /// 원본 경로 대신 라우트 템플릿을 남긴다.
+    /// </summary>
+    /// <remarks>
+    /// <c>GET /api/employee/김철수</c> 를 그대로 남기면 <b>직원 이름이 로그에 쌓인다.</b>
+    /// 라우팅이 끝난 시점(응답 직전)이므로 매칭된 엔드포인트에서 템플릿을 꺼낼 수 있다.
+    /// 매칭되는 엔드포인트가 없는 요청(404)은 우리 API 경로가 아니므로 원본을 남겨 조사에 쓴다.
+    /// </remarks>
+    private static string ResolveRoute(HttpContext context)
+    {
+        var template = (context.GetEndpoint() as RouteEndpoint)?.RoutePattern.RawText;
+
+        return template is null ? context.Request.Path.Value ?? "/" : $"/{template}";
+    }
+
+    /// <summary>
+    /// 쿼리스트링은 키만 남긴다.
+    /// </summary>
+    /// <remarks>검색어(<c>?q=김철수</c>)에도 개인정보가 들어올 수 있기 때문이다.</remarks>
+    private static string ResolveQueryKeys(HttpContext context)
+        => context.Request.Query.Count == 0
+            ? string.Empty
+            : $"?{string.Join("&", context.Request.Query.Keys)}";
 }

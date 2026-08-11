@@ -21,19 +21,22 @@ public sealed class DeleteEmployeeCommandHandlerTests
             new FixedDateTimeProvider(Today),
             NullLogger<DeleteEmployeeCommandHandler>.Instance);
 
+    private int SeedEmployee()
+        => _repository.Seed(
+            Employee.Create("김철수", "charles@clovf.com", "01075312468", new DateOnly(2018, 3, 7), Today).Value);
+
     [Fact]
     public async Task 제외하면_삭제_시각이_기록되고_저장된다()
     {
-        var id = _repository.Seed(
-            Employee.Create("김철수", "charles@clovf.com", "01075312468", new DateOnly(2018, 3, 7), Today).Value);
+        var id = SeedEmployee();
 
         var result = await _handler.HandleAsync(new DeleteEmployeeCommand(id), default);
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal(1, _unitOfWork.SaveCount);
+        result.IsSuccess.Should().BeTrue();
+        _unitOfWork.SaveCount.Should().Be(1);
 
         // 물리 삭제가 아니라 제외 표시다. 조회에서는 사라지지만 행 자체는 남아 있다.
-        Assert.Null(await _repository.FindByIdAsync(id, default));
+        (await _repository.FindByIdAsync(id, default)).Should().BeNull();
     }
 
     [Fact]
@@ -41,23 +44,22 @@ public sealed class DeleteEmployeeCommandHandlerTests
     {
         var result = await _handler.HandleAsync(new DeleteEmployeeCommand(999), default);
 
-        Assert.True(result.IsFailure);
-        Assert.Equal("employee.not_found", result.FirstError.Code);
-        Assert.Equal(ErrorType.NotFound, result.FirstError.Type);
-        Assert.Equal(0, _unitOfWork.SaveCount);
+        result.IsFailure.Should().BeTrue();
+        result.FirstError.Code.Should().Be("employee.not_found");
+        result.FirstError.Type.Should().Be(ErrorType.NotFound);
+        _unitOfWork.SaveCount.Should().Be(0);
     }
 
     [Fact]
     public async Task 이미_제외된_직원을_다시_제외하면_NotFound다()
     {
-        var id = _repository.Seed(
-            Employee.Create("김철수", "charles@clovf.com", "01075312468", new DateOnly(2018, 3, 7), Today).Value);
+        var id = SeedEmployee();
 
         await _handler.HandleAsync(new DeleteEmployeeCommand(id), default);
         var second = await _handler.HandleAsync(new DeleteEmployeeCommand(id), default);
 
-        Assert.True(second.IsFailure);
-        Assert.Equal("employee.not_found", second.FirstError.Code);
+        second.IsFailure.Should().BeTrue();
+        second.FirstError.Code.Should().Be("employee.not_found");
     }
 
     [Theory]
@@ -67,8 +69,8 @@ public sealed class DeleteEmployeeCommandHandlerTests
     {
         var validator = new DeleteEmployeeCommandValidator();
 
-        var error = Assert.Single(validator.Validate(new DeleteEmployeeCommand(id)));
+        var errors = validator.Validate(new DeleteEmployeeCommand(id));
 
-        Assert.Equal("employee.id_invalid", error.Code);
+        errors.Should().ContainSingle().Which.Code.Should().Be("employee.id_invalid");
     }
 }

@@ -20,15 +20,10 @@ public sealed class JsonEmployeeParserTests
 
         var result = _parser.Parse(new EmployeePayload(Json));
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal(3, result.Value.Count);
-
-        var first = result.Value[0];
-        Assert.Equal("김클로", first.Name);
-        Assert.Equal("clo@clovf.com", first.Email);
-        Assert.Equal("010-1111-2424", first.Tel);
-        Assert.Equal("2012-01-05", first.Joined);
-        Assert.Equal(1, first.Position);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().HaveCount(3);
+        result.Value[0].Should().BeEquivalentTo(
+            new EmployeeRecord("김클로", "clo@clovf.com", "010-1111-2424", "2012-01-05", 1));
     }
 
     [Fact]
@@ -38,8 +33,8 @@ public sealed class JsonEmployeeParserTests
 
         var result = _parser.Parse(new EmployeePayload(Json));
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal("김클로", Assert.Single(result.Value).Name);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().ContainSingle().Which.Name.Should().Be("김클로");
     }
 
     [Fact]
@@ -49,8 +44,8 @@ public sealed class JsonEmployeeParserTests
 
         var result = _parser.Parse(new EmployeePayload(Json));
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal("김클로", Assert.Single(result.Value).Name);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().ContainSingle().Which.Name.Should().Be("김클로");
     }
 
     [Fact]
@@ -60,8 +55,8 @@ public sealed class JsonEmployeeParserTests
 
         var result = _parser.Parse(new EmployeePayload(Json));
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal("clo@clovf.com", Assert.Single(result.Value).Email);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().ContainSingle().Which.Email.Should().Be("clo@clovf.com");
     }
 
     [Fact]
@@ -71,8 +66,8 @@ public sealed class JsonEmployeeParserTests
 
         var result = _parser.Parse(new EmployeePayload(Json));
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal("1011112424", Assert.Single(result.Value).Tel);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().ContainSingle().Which.Tel.Should().Be("1011112424");
     }
 
     [Fact]
@@ -82,10 +77,10 @@ public sealed class JsonEmployeeParserTests
 
         var result = _parser.Parse(new EmployeePayload(Json));
 
-        Assert.True(result.IsSuccess);
-        var record = Assert.Single(result.Value);
-        Assert.Null(record.Email);
-        Assert.Null(record.Tel);
+        result.IsSuccess.Should().BeTrue();
+        var record = result.Value.Should().ContainSingle().Which;
+        record.Email.Should().BeNull();
+        record.Tel.Should().BeNull();
     }
 
     [Fact]
@@ -93,8 +88,8 @@ public sealed class JsonEmployeeParserTests
     {
         var result = _parser.Parse(new EmployeePayload("""[{"name":"김클로",]"""));
 
-        Assert.True(result.IsFailure);
-        Assert.Equal("json.malformed", result.FirstError.Code);
+        result.IsFailure.Should().BeTrue();
+        result.FirstError.Code.Should().Be("json.malformed");
     }
 
     [Fact]
@@ -102,10 +97,10 @@ public sealed class JsonEmployeeParserTests
     {
         var result = _parser.Parse(new EmployeePayload("""["김클로", 123]"""));
 
-        Assert.True(result.IsFailure);
-        Assert.Equal(2, result.Errors.Count);
-        Assert.All(result.Errors, error => Assert.Equal("json.unexpected_element", error.Code));
-        Assert.Contains("[1번째 항목]", result.Errors[0].Message, StringComparison.Ordinal);
+        result.IsFailure.Should().BeTrue();
+        result.Errors.Should().HaveCount(2);
+        result.Errors.Should().AllSatisfy(error => error.Code.Should().Be("json.unexpected_element"));
+        result.Errors[0].Message.Should().Contain("[1번째 항목]");
     }
 
     [Fact]
@@ -113,8 +108,8 @@ public sealed class JsonEmployeeParserTests
     {
         var result = _parser.Parse(new EmployeePayload("\"문자열\""));
 
-        Assert.True(result.IsFailure);
-        Assert.Equal("json.unexpected_root", result.FirstError.Code);
+        result.IsFailure.Should().BeTrue();
+        result.FirstError.Code.Should().Be("json.unexpected_root");
     }
 
     [Theory]
@@ -122,5 +117,5 @@ public sealed class JsonEmployeeParserTests
     [InlineData("  {\"name\":\"x\"}", true)]
     [InlineData("김철수, a@b.com, 01011112222, 2020.01.01", false)]
     public void 내용으로_json_여부를_판별한다(string content, bool expected)
-        => Assert.Equal(expected, _parser.CanParse(content));
+        => _parser.CanParse(content).Should().Be(expected);
 }

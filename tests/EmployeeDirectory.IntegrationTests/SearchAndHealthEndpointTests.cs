@@ -21,7 +21,7 @@ public sealed class SearchEndpointTests(EmployeeApiFactory factory)
                            """;
 
         var response = await _client.PostRawAsync(Csv, "text/csv");
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
     }
 
     public Task DisposeAsync() => Task.CompletedTask;
@@ -31,8 +31,8 @@ public sealed class SearchEndpointTests(EmployeeApiFactory factory)
     {
         var body = await (await _client.GetAsync("/api/employee?q=수색")).ReadAsync<PagedResponse>();
 
-        Assert.Equal(2, body.TotalCount);
-        Assert.All(body.Items, item => Assert.Contains("수색", item.Name, StringComparison.Ordinal));
+        body.TotalCount.Should().Be(2);
+        body.Items.Should().AllSatisfy(item => item.Name.Should().Contain("수색"));
     }
 
     [Fact]
@@ -40,7 +40,7 @@ public sealed class SearchEndpointTests(EmployeeApiFactory factory)
     {
         var body = await (await _client.GetAsync("/api/employee?q=lookup")).ReadAsync<PagedResponse>();
 
-        Assert.Equal("이검색", Assert.Single(body.Items).Name);
+        body.Items.Should().ContainSingle().Which.Name.Should().Be("이검색");
     }
 
     [Fact]
@@ -49,7 +49,7 @@ public sealed class SearchEndpointTests(EmployeeApiFactory factory)
         // 저장 값은 01075312468 이지만 사용자는 하이픈을 넣어 검색한다.
         var body = await (await _client.GetAsync("/api/employee?q=010-7531")).ReadAsync<PagedResponse>();
 
-        Assert.Equal("김수색", Assert.Single(body.Items).Name);
+        body.Items.Should().ContainSingle().Which.Name.Should().Be("김수색");
     }
 
     [Fact]
@@ -57,11 +57,11 @@ public sealed class SearchEndpointTests(EmployeeApiFactory factory)
     {
         // 이스케이프를 빠뜨리면 '%' 한 글자가 전체 행을 반환한다.
         var wildcard = await (await _client.GetAsync("/api/employee?q=%25")).ReadAsync<PagedResponse>();
-        Assert.Equal(0, wildcard.TotalCount);
+        wildcard.TotalCount.Should().Be(0);
 
         // 언더스코어도 마찬가지로 리터럴이어야 한다.
         var underscore = await (await _client.GetAsync("/api/employee?q=percent_100")).ReadAsync<PagedResponse>();
-        Assert.Equal("특수문자", Assert.Single(underscore.Items).Name);
+        underscore.Items.Should().ContainSingle().Which.Name.Should().Be("특수문자");
     }
 
     [Fact]
@@ -69,10 +69,10 @@ public sealed class SearchEndpointTests(EmployeeApiFactory factory)
     {
         var body = await (await _client.GetAsync("/api/employee?q=수색&page=1&pageSize=1")).ReadAsync<PagedResponse>();
 
-        Assert.Single(body.Items);
-        Assert.Equal(2, body.TotalCount);
-        Assert.Equal(2, body.TotalPages);
-        Assert.True(body.HasNextPage);
+        body.Items.Should().ContainSingle();
+        body.TotalCount.Should().Be(2);
+        body.TotalPages.Should().Be(2);
+        body.HasNextPage.Should().BeTrue();
     }
 
     [Fact]
@@ -80,8 +80,8 @@ public sealed class SearchEndpointTests(EmployeeApiFactory factory)
     {
         var body = await (await _client.GetAsync("/api/employee?q=존재하지않는이름")).ReadAsync<PagedResponse>();
 
-        Assert.Empty(body.Items);
-        Assert.Equal(0, body.TotalCount);
+        body.Items.Should().BeEmpty();
+        body.TotalCount.Should().Be(0);
     }
 
     [Fact]
@@ -91,8 +91,8 @@ public sealed class SearchEndpointTests(EmployeeApiFactory factory)
 
         var response = await _client.GetAsync($"/api/employee?q={Uri.EscapeDataString(tooLong)}");
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Equal("search.keyword_too_long", (await response.ReadAsync<ProblemResponse>()).Errors![0].Code);
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await response.ReadAsync<ProblemResponse>()).Errors![0].Code.Should().Be("search.keyword_too_long");
     }
 
     [Fact]
@@ -100,7 +100,7 @@ public sealed class SearchEndpointTests(EmployeeApiFactory factory)
     {
         var body = await (await _client.GetAsync("/api/employee")).ReadAsync<PagedResponse>();
 
-        Assert.Equal(4, body.TotalCount);
+        body.TotalCount.Should().Be(4);
     }
 }
 
@@ -113,14 +113,14 @@ public sealed class HealthEndpointTests(EmployeeApiFactory factory) : IClassFixt
     {
         var response = await _client.GetAsync("/health");
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var body = await response.ReadAsync<HealthResponse>();
-        Assert.Equal("Healthy", body.Status);
+        body.Status.Should().Be("Healthy");
 
-        var database = Assert.Single(body.Checks);
-        Assert.Equal("database", database.Name);
-        Assert.Equal("Healthy", database.Status);
+        var database = body.Checks.Should().ContainSingle().Which;
+        database.Name.Should().Be("database");
+        database.Status.Should().Be("Healthy");
     }
 
     [Fact]
@@ -129,6 +129,6 @@ public sealed class HealthEndpointTests(EmployeeApiFactory factory) : IClassFixt
         // 운영 확인용 경로라 공개 API 스펙에 섞이면 안 된다.
         var swagger = await _client.GetStringAsync("/swagger/v1/swagger.json");
 
-        Assert.DoesNotContain("\"/health\"", swagger, StringComparison.Ordinal);
+        swagger.Should().NotContain("\"/health\"");
     }
 }

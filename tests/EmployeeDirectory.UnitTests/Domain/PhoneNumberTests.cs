@@ -13,8 +13,8 @@ public sealed class PhoneNumberTests
     {
         var result = PhoneNumber.Create(input);
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal(expected, result.Value.Value);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Value.Should().Be(expected);
     }
 
     [Theory]
@@ -26,8 +26,8 @@ public sealed class PhoneNumberTests
     {
         var result = PhoneNumber.Create(input);
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal(expected, result.Value.Formatted);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Formatted.Should().Be(expected);
     }
 
     [Theory]
@@ -38,8 +38,8 @@ public sealed class PhoneNumberTests
     {
         var result = PhoneNumber.Create(input);
 
-        Assert.True(result.IsFailure);
-        Assert.Equal("employee.tel_required", result.FirstError.Code);
+        result.IsFailure.Should().BeTrue();
+        result.FirstError.Code.Should().Be("employee.tel_required");
     }
 
     [Theory]
@@ -51,8 +51,8 @@ public sealed class PhoneNumberTests
     {
         var result = PhoneNumber.Create(input);
 
-        Assert.True(result.IsFailure);
-        Assert.Equal("employee.tel_invalid", result.FirstError.Code);
+        result.IsFailure.Should().BeTrue();
+        result.FirstError.Code.Should().Be("employee.tel_invalid");
     }
 
     [Fact]
@@ -61,6 +61,34 @@ public sealed class PhoneNumberTests
         var left = PhoneNumber.Create("010-1111-2424").Value;
         var right = PhoneNumber.Create("01011112424").Value;
 
-        Assert.Equal(left, right);
+        left.Should().Be(right);
     }
+
+    [Theory]
+    [InlineData("01075312468", "010-****-2468")]
+    [InlineData("021234567", "02-***-4567")]
+    public void 마스킹은_가운데_국번만_가린다(string input, string expected)
+    {
+        var tel = PhoneNumber.Create(input).Value;
+
+        tel.Masked.Should().Be(expected);
+    }
+
+    [Fact]
+    public void 마스킹된_값에는_국번이_남지_않는다()
+    {
+        var tel = PhoneNumber.Create("010-7531-2468").Value;
+
+        tel.Masked.Should().NotContain("7531");
+        // 뒤 네 자리는 사람을 구분하기 위해 남긴다.
+        tel.Masked.Should().EndWith("2468");
+    }
+
+    [Theory]
+    [InlineData("010-7531", "0107531")]
+    [InlineData("010 7531", "0107531")]
+    [InlineData("검색어", "")]
+    [InlineData(null, "")]
+    public void 검색어에서_숫자만_추출한다(string? input, string expected)
+        => PhoneNumber.DigitsOf(input).Should().Be(expected);
 }

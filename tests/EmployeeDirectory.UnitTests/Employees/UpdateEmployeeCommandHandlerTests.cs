@@ -33,12 +33,12 @@ public sealed class UpdateEmployeeCommandHandlerTests
             new UpdateEmployeeCommand(id, "김철수(변경)", "changed@clovf.com", "010-9999-8888", "2019.01.01"),
             default);
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal("김철수(변경)", result.Value.Name);
-        Assert.Equal("changed@clovf.com", result.Value.Email);
-        Assert.Equal("010-9999-8888", result.Value.Tel);
-        Assert.Equal(new DateOnly(2019, 1, 1), result.Value.Joined);
-        Assert.Equal(1, _unitOfWork.SaveCount);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Name.Should().Be("김철수(변경)");
+        result.Value.Email.Should().Be("changed@clovf.com");
+        result.Value.Tel.Should().Be("010-9999-8888");
+        result.Value.Joined.Should().Be(new DateOnly(2019, 1, 1));
+        _unitOfWork.SaveCount.Should().Be(1);
     }
 
     [Fact]
@@ -48,10 +48,10 @@ public sealed class UpdateEmployeeCommandHandlerTests
             new UpdateEmployeeCommand(999, "김철수", "charles@clovf.com", "01075312468", "2018.03.07"),
             default);
 
-        Assert.True(result.IsFailure);
-        Assert.Equal("employee.not_found", result.FirstError.Code);
-        Assert.Equal(ErrorType.NotFound, result.FirstError.Type);
-        Assert.Equal(0, _unitOfWork.SaveCount);
+        result.IsFailure.Should().BeTrue();
+        result.FirstError.Code.Should().Be("employee.not_found");
+        result.FirstError.Type.Should().Be(ErrorType.NotFound);
+        _unitOfWork.SaveCount.Should().Be(0);
     }
 
     [Fact]
@@ -65,8 +65,8 @@ public sealed class UpdateEmployeeCommandHandlerTests
             new UpdateEmployeeCommand(id, "김철수", "charles@clovf.com", "01075312468", "2018.03.07"),
             default);
 
-        Assert.True(result.IsFailure);
-        Assert.Equal("employee.not_found", result.FirstError.Code);
+        result.IsFailure.Should().BeTrue();
+        result.FirstError.Code.Should().Be("employee.not_found");
     }
 
     [Fact]
@@ -79,10 +79,10 @@ public sealed class UpdateEmployeeCommandHandlerTests
             new UpdateEmployeeCommand(id, "김철수", "matilda@clovf.com", "01075312468", "2018.03.07"),
             default);
 
-        Assert.True(result.IsFailure);
-        Assert.Equal("employee.email_taken", result.FirstError.Code);
-        Assert.Equal(ErrorType.Conflict, result.FirstError.Type);
-        Assert.Equal(0, _unitOfWork.SaveCount);
+        result.IsFailure.Should().BeTrue();
+        result.FirstError.Code.Should().Be("employee.email_taken");
+        result.FirstError.Type.Should().Be(ErrorType.Conflict);
+        _unitOfWork.SaveCount.Should().Be(0);
     }
 
     [Fact]
@@ -94,8 +94,8 @@ public sealed class UpdateEmployeeCommandHandlerTests
             new UpdateEmployeeCommand(id, "김철수", "charles@clovf.com", "010-1111-2222", "2018.03.07"),
             default);
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal("010-1111-2222", result.Value.Tel);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Tel.Should().Be("010-1111-2222");
     }
 
     [Fact]
@@ -107,9 +107,9 @@ public sealed class UpdateEmployeeCommandHandlerTests
             new UpdateEmployeeCommand(id, "김철수", "charles@clovf.com", "01075312468", "07/03/2018"),
             default);
 
-        Assert.True(result.IsFailure);
-        Assert.Equal("employee.joined_invalid", result.FirstError.Code);
-        Assert.Contains("yyyy-MM-dd", result.FirstError.Message, StringComparison.Ordinal);
+        result.IsFailure.Should().BeTrue();
+        result.FirstError.Code.Should().Be("employee.joined_invalid");
+        result.FirstError.Message.Should().Contain("yyyy-MM-dd");
     }
 
     [Fact]
@@ -121,10 +121,10 @@ public sealed class UpdateEmployeeCommandHandlerTests
             new UpdateEmployeeCommand(id, "", "이메일아님", "123", "2050.01.01"),
             default);
 
-        Assert.True(result.IsFailure);
-        Assert.Equal(0, _unitOfWork.SaveCount);
-        Assert.Contains(result.Errors, error => error.Code == "employee.name_required");
-        Assert.Contains(result.Errors, error => error.Code == "employee.joined_in_future");
+        result.IsFailure.Should().BeTrue();
+        _unitOfWork.SaveCount.Should().Be(0);
+        result.Errors.Should().Contain(error => error.Code == "employee.name_required");
+        result.Errors.Should().Contain(error => error.Code == "employee.joined_in_future");
     }
 
     [Theory]
@@ -134,9 +134,9 @@ public sealed class UpdateEmployeeCommandHandlerTests
     {
         var validator = new UpdateEmployeeCommandValidator();
 
-        var error = Assert.Single(validator.Validate(
-            new UpdateEmployeeCommand(id, "김철수", "charles@clovf.com", "01075312468", "2018.03.07")));
+        var errors = validator.Validate(
+            new UpdateEmployeeCommand(id, "김철수", "charles@clovf.com", "01075312468", "2018.03.07"));
 
-        Assert.Equal("employee.id_invalid", error.Code);
+        errors.Should().ContainSingle().Which.Code.Should().Be("employee.id_invalid");
     }
 }

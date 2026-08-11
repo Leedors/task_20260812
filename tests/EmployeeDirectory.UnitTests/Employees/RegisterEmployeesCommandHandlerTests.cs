@@ -1,5 +1,6 @@
 using EmployeeDirectory.Application.Abstractions.Parsing;
 using EmployeeDirectory.Application.Employees.Commands.RegisterEmployees;
+using EmployeeDirectory.Domain.Common;
 using EmployeeDirectory.Domain.Employees;
 using EmployeeDirectory.Infrastructure.Parsing;
 using EmployeeDirectory.UnitTests.TestDoubles;
@@ -23,6 +24,9 @@ public sealed class RegisterEmployeesCommandHandlerTests
             new FixedDateTimeProvider(Today),
             NullLogger<RegisterEmployeesCommandHandler>.Instance);
 
+    private Task<Result<RegisterEmployeesResult>> HandleAsync(string content)
+        => _handler.HandleAsync(new RegisterEmployeesCommand(new EmployeePayload(content)), default);
+
     [Fact]
     public async Task csv를_등록하면_신규_건수를_반환한다()
     {
@@ -31,15 +35,12 @@ public sealed class RegisterEmployeesCommandHandlerTests
                            박영희, matilda@clovf.com, 01087654321, 2021.04.28
                            """;
 
-        var result = await _handler.HandleAsync(new RegisterEmployeesCommand(new EmployeePayload(Csv)), default);
+        var result = await HandleAsync(Csv);
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal(EmployeeSourceFormat.Csv, result.Value.Format);
-        Assert.Equal(2, result.Value.Created);
-        Assert.Equal(0, result.Value.Updated);
-        Assert.Equal(2, result.Value.TotalProcessed);
-        Assert.Equal(2, _repository.Added.Count);
-        Assert.Equal(1, _unitOfWork.SaveCount);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().BeEquivalentTo(new RegisterEmployeesResult(EmployeeSourceFormat.Csv, 2, 0, 0, 2));
+        _repository.Added.Should().HaveCount(2);
+        _unitOfWork.SaveCount.Should().Be(1);
     }
 
     [Fact]
@@ -47,12 +48,12 @@ public sealed class RegisterEmployeesCommandHandlerTests
     {
         const string Json = """[{"name":"김클로","email":"clo@clovf.com","tel":"010-1111-2424","joined":"2012-01-05"}]""";
 
-        var result = await _handler.HandleAsync(new RegisterEmployeesCommand(new EmployeePayload(Json)), default);
+        var result = await HandleAsync(Json);
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal(EmployeeSourceFormat.Json, result.Value.Format);
-        Assert.Equal(1, result.Value.Created);
-        Assert.Equal("010-1111-2424", Assert.Single(_repository.Added).Tel.Formatted);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Format.Should().Be(EmployeeSourceFormat.Json);
+        result.Value.Created.Should().Be(1);
+        _repository.Added.Should().ContainSingle().Which.Tel.Formatted.Should().Be("010-1111-2424");
     }
 
     [Fact]
@@ -60,14 +61,12 @@ public sealed class RegisterEmployeesCommandHandlerTests
     {
         _repository.Seed(Employee.Create("김철수", "charles@clovf.com", "01000000000", new DateOnly(2018, 3, 7), Today).Value);
 
-        const string Csv = "김철수(변경), charles@clovf.com, 010-9999-8888, 2018.03.07";
+        var result = await HandleAsync("김철수(변경), charles@clovf.com, 010-9999-8888, 2018.03.07");
 
-        var result = await _handler.HandleAsync(new RegisterEmployeesCommand(new EmployeePayload(Csv)), default);
-
-        Assert.True(result.IsSuccess);
-        Assert.Equal(0, result.Value.Created);
-        Assert.Equal(1, result.Value.Updated);
-        Assert.Empty(_repository.Added);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Created.Should().Be(0);
+        result.Value.Updated.Should().Be(1);
+        _repository.Added.Should().BeEmpty();
     }
 
     [Fact]
@@ -77,16 +76,14 @@ public sealed class RegisterEmployeesCommandHandlerTests
         employee.MarkDeleted(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
         _repository.Seed(employee);
 
-        const string Csv = "김철수, charles@clovf.com, 010-9999-8888, 2018.03.07";
+        var result = await HandleAsync("김철수, charles@clovf.com, 010-9999-8888, 2018.03.07");
 
-        var result = await _handler.HandleAsync(new RegisterEmployeesCommand(new EmployeePayload(Csv)), default);
-
-        Assert.True(result.IsSuccess);
-        Assert.Equal(0, result.Value.Created);
-        Assert.Equal(0, result.Value.Updated);
-        Assert.Equal(1, result.Value.Restored);
-        Assert.False(employee.IsDeleted);
-        Assert.Equal("010-9999-8888", employee.Tel.Formatted);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Created.Should().Be(0);
+        result.Value.Updated.Should().Be(0);
+        result.Value.Restored.Should().Be(1);
+        employee.IsDeleted.Should().BeFalse();
+        employee.Tel.Formatted.Should().Be("010-9999-8888");
     }
 
     [Fact]
@@ -99,11 +96,11 @@ public sealed class RegisterEmployeesCommandHandlerTests
                            박영희, matilda@clovf.com, 01087654321, 2021.04.28
                            """;
 
-        var result = await _handler.HandleAsync(new RegisterEmployeesCommand(new EmployeePayload(Csv)), default);
+        var result = await HandleAsync(Csv);
 
-        Assert.True(result.IsSuccess);
+        result.IsSuccess.Should().BeTrue();
         var summary = result.Value;
-        Assert.Equal(summary.TotalProcessed, summary.Created + summary.Updated + summary.Restored);
+        (summary.Created + summary.Updated + summary.Restored).Should().Be(summary.TotalProcessed);
     }
 
     [Fact]
@@ -111,12 +108,10 @@ public sealed class RegisterEmployeesCommandHandlerTests
     {
         _repository.Seed(Employee.Create("김철수", "charles@clovf.com", "01000000000", new DateOnly(2018, 3, 7), Today).Value);
 
-        const string Csv = "김철수, CHARLES@clovf.com, 010-9999-8888, 2018.03.07";
+        var result = await HandleAsync("김철수, CHARLES@clovf.com, 010-9999-8888, 2018.03.07");
 
-        var result = await _handler.HandleAsync(new RegisterEmployeesCommand(new EmployeePayload(Csv)), default);
-
-        Assert.True(result.IsSuccess);
-        Assert.Equal(1, result.Value.Updated);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Updated.Should().Be(1);
     }
 
     [Fact]
@@ -127,13 +122,13 @@ public sealed class RegisterEmployeesCommandHandlerTests
                            박영희, 잘못된이메일, 01087654321, 2021.04.28
                            """;
 
-        var result = await _handler.HandleAsync(new RegisterEmployeesCommand(new EmployeePayload(Csv)), default);
+        var result = await HandleAsync(Csv);
 
-        Assert.True(result.IsFailure);
-        Assert.Contains(result.Errors, error => error.Code == "employee.email_invalid");
-        Assert.Contains("[2행]", result.FirstError.Message, StringComparison.Ordinal);
-        Assert.Empty(_repository.Added);
-        Assert.Equal(0, _unitOfWork.SaveCount);
+        result.IsFailure.Should().BeTrue();
+        result.Errors.Should().Contain(error => error.Code == "employee.email_invalid");
+        result.FirstError.Message.Should().Contain("[2행]");
+        _repository.Added.Should().BeEmpty();
+        _unitOfWork.SaveCount.Should().Be(0);
     }
 
     [Fact]
@@ -145,10 +140,10 @@ public sealed class RegisterEmployeesCommandHandlerTests
                            홍길동, kildong.hong@clovf.com, 전화번호아님, 2015.08.15
                            """;
 
-        var result = await _handler.HandleAsync(new RegisterEmployeesCommand(new EmployeePayload(Csv)), default);
+        var result = await HandleAsync(Csv);
 
-        Assert.True(result.IsFailure);
-        Assert.Equal(3, result.Errors.Count);
+        result.IsFailure.Should().BeTrue();
+        result.Errors.Should().HaveCount(3);
     }
 
     [Fact]
@@ -159,31 +154,29 @@ public sealed class RegisterEmployeesCommandHandlerTests
                            김철수2, charles@clovf.com, 01087654321, 2021.04.28
                            """;
 
-        var result = await _handler.HandleAsync(new RegisterEmployeesCommand(new EmployeePayload(Csv)), default);
+        var result = await HandleAsync(Csv);
 
-        Assert.True(result.IsFailure);
-        Assert.Equal("employee.email_duplicated_in_payload", result.FirstError.Code);
-        Assert.Empty(_repository.Added);
+        result.IsFailure.Should().BeTrue();
+        result.FirstError.Code.Should().Be("employee.email_duplicated_in_payload");
+        _repository.Added.Should().BeEmpty();
     }
 
     [Fact]
     public async Task 입사일_형식이_틀리면_허용_형식을_안내한다()
     {
-        const string Csv = "김철수, charles@clovf.com, 01075312468, 07/03/2018";
+        var result = await HandleAsync("김철수, charles@clovf.com, 01075312468, 07/03/2018");
 
-        var result = await _handler.HandleAsync(new RegisterEmployeesCommand(new EmployeePayload(Csv)), default);
-
-        Assert.True(result.IsFailure);
-        Assert.Equal("employee.joined_invalid", result.FirstError.Code);
-        Assert.Contains("yyyy-MM-dd", result.FirstError.Message, StringComparison.Ordinal);
+        result.IsFailure.Should().BeTrue();
+        result.FirstError.Code.Should().Be("employee.joined_invalid");
+        result.FirstError.Message.Should().Contain("yyyy-MM-dd");
     }
 
     [Fact]
     public async Task 본문이_비어_있으면_실패한다()
     {
-        var result = await _handler.HandleAsync(new RegisterEmployeesCommand(new EmployeePayload("   ")), default);
+        var result = await HandleAsync("   ");
 
-        Assert.True(result.IsFailure);
-        Assert.Equal("payload.empty", result.FirstError.Code);
+        result.IsFailure.Should().BeTrue();
+        result.FirstError.Code.Should().Be("payload.empty");
     }
 }

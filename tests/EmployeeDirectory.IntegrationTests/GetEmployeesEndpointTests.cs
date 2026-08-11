@@ -19,7 +19,7 @@ public sealed class GetEmployeesEndpointTests(EmployeeApiFactory factory)
         }
 
         var response = await _client.PostRawAsync(csv.ToString(), "text/csv");
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
     }
 
     public Task DisposeAsync() => Task.CompletedTask;
@@ -29,17 +29,17 @@ public sealed class GetEmployeesEndpointTests(EmployeeApiFactory factory)
     {
         var response = await _client.GetAsync("/api/employee?page=2&pageSize=10");
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var body = await response.ReadAsync<PagedResponse>();
-        Assert.Equal(10, body.Items.Count);
-        Assert.Equal(2, body.Page);
-        Assert.Equal(10, body.PageSize);
-        Assert.Equal(SeedCount, body.TotalCount);
-        Assert.Equal(3, body.TotalPages);
-        Assert.True(body.HasPreviousPage);
-        Assert.True(body.HasNextPage);
-        Assert.Equal("직원11", body.Items[0].Name);
+        body.Items.Should().HaveCount(10);
+        body.Page.Should().Be(2);
+        body.PageSize.Should().Be(10);
+        body.TotalCount.Should().Be(SeedCount);
+        body.TotalPages.Should().Be(3);
+        body.HasPreviousPage.Should().BeTrue();
+        body.HasNextPage.Should().BeTrue();
+        body.Items[0].Name.Should().Be("직원11");
     }
 
     [Fact]
@@ -47,9 +47,9 @@ public sealed class GetEmployeesEndpointTests(EmployeeApiFactory factory)
     {
         var body = await (await _client.GetAsync("/api/employee")).ReadAsync<PagedResponse>();
 
-        Assert.Equal(1, body.Page);
-        Assert.Equal(20, body.PageSize);
-        Assert.Equal(20, body.Items.Count);
+        body.Page.Should().Be(1);
+        body.PageSize.Should().Be(20);
+        body.Items.Should().HaveCount(20);
     }
 
     [Fact]
@@ -57,9 +57,9 @@ public sealed class GetEmployeesEndpointTests(EmployeeApiFactory factory)
     {
         var body = await (await _client.GetAsync("/api/employee?page=3&pageSize=10")).ReadAsync<PagedResponse>();
 
-        Assert.Equal(5, body.Items.Count);
-        Assert.False(body.HasNextPage);
-        Assert.True(body.HasPreviousPage);
+        body.Items.Should().HaveCount(5);
+        body.HasNextPage.Should().BeFalse();
+        body.HasPreviousPage.Should().BeTrue();
     }
 
     [Fact]
@@ -67,8 +67,8 @@ public sealed class GetEmployeesEndpointTests(EmployeeApiFactory factory)
     {
         var body = await (await _client.GetAsync("/api/employee?page=999&pageSize=10")).ReadAsync<PagedResponse>();
 
-        Assert.Empty(body.Items);
-        Assert.Equal(SeedCount, body.TotalCount);
+        body.Items.Should().BeEmpty();
+        body.TotalCount.Should().Be(SeedCount);
     }
 
     [Theory]
@@ -79,10 +79,10 @@ public sealed class GetEmployeesEndpointTests(EmployeeApiFactory factory)
     {
         var response = await _client.GetAsync($"/api/employee{query}");
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
         var problem = await response.ReadAsync<ProblemResponse>();
-        Assert.Contains(problem.Errors!, error => error.Code == expectedCode);
+        problem.Errors!.Should().Contain(error => error.Code == expectedCode);
     }
 
     [Fact]
@@ -90,8 +90,20 @@ public sealed class GetEmployeesEndpointTests(EmployeeApiFactory factory)
     {
         var body = await (await _client.GetAsync("/api/employee?page=1&pageSize=1")).ReadAsync<PagedResponse>();
 
-        Assert.Equal("010-0000-0001", body.Items[0].Tel);
-        Assert.Equal(new DateOnly(2020, 1, 1), body.Items[0].Joined);
+        body.Items[0].Tel.Should().Be("010-0000-0001");
+        body.Items[0].Joined.Should().Be(new DateOnly(2020, 1, 1));
+    }
+
+    [Fact]
+    public async Task 등록_시각과_수정_시각이_함께_내려온다()
+    {
+        var body = await (await _client.GetAsync("/api/employee?page=1&pageSize=1")).ReadAsync<PagedResponse>();
+        var employee = body.Items[0];
+
+        employee.CreatedAt.Should().NotBe(default);
+        // 이 클래스의 InitializeAsync 는 테스트마다 실행되고 같은 이메일이라 upsert 된다.
+        // 즉 등록 시각은 최초 값이 유지되고 수정 시각만 앞으로 간다.
+        employee.UpdatedAt.Should().BeOnOrAfter(employee.CreatedAt);
     }
 }
 
@@ -105,7 +117,7 @@ public sealed class GetEmployeeByNameEndpointTests(EmployeeApiFactory factory)
         const string Csv = "김철수, charles@clovf.com, 01075312468, 2018.03.07";
 
         var response = await _client.PostRawAsync(Csv, "text/csv");
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
     }
 
     public Task DisposeAsync() => Task.CompletedTask;
@@ -115,13 +127,13 @@ public sealed class GetEmployeeByNameEndpointTests(EmployeeApiFactory factory)
     {
         var response = await _client.GetAsync("/api/employee/김철수");
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var body = await response.ReadAsync<EmployeeResponse>();
-        Assert.Equal("김철수", body.Name);
-        Assert.Equal("charles@clovf.com", body.Email);
-        Assert.Equal("010-7531-2468", body.Tel);
-        Assert.Equal(new DateOnly(2018, 3, 7), body.Joined);
+        body.Name.Should().Be("김철수");
+        body.Email.Should().Be("charles@clovf.com");
+        body.Tel.Should().Be("010-7531-2468");
+        body.Joined.Should().Be(new DateOnly(2018, 3, 7));
     }
 
     [Fact]
@@ -129,12 +141,12 @@ public sealed class GetEmployeeByNameEndpointTests(EmployeeApiFactory factory)
     {
         var response = await _client.GetAsync("/api/employee/없는사람");
 
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        response.Content.Headers.ContentType?.MediaType.Should().Be("application/problem+json");
 
         var problem = await response.ReadAsync<ProblemResponse>();
-        Assert.Equal(404, problem.Status);
-        Assert.Equal("employee.not_found", problem.Errors![0].Code);
+        problem.Status.Should().Be(404);
+        problem.Errors![0].Code.Should().Be("employee.not_found");
     }
 
     [Fact]
@@ -142,6 +154,6 @@ public sealed class GetEmployeeByNameEndpointTests(EmployeeApiFactory factory)
     {
         var response = await _client.GetAsync("/api/employee/김철수");
 
-        Assert.True(response.Headers.Contains("X-Correlation-Id"));
+        response.Headers.Should().ContainKey("X-Correlation-Id");
     }
 }

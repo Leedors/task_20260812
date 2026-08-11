@@ -39,10 +39,11 @@ internal sealed class DeleteEmployeeCommandHandler(
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         // 누가 연락망에서 빠졌는지는 사후 추적이 필요한 사건이므로 남긴다.
+        // 다만 로그는 보존 기간이 길고 접근 통제가 느슨하므로 이메일은 마스킹해서 남긴다.
         logger.LogInformation(
-            "직원 {EmployeeId}({Email}) 연락망에서 제외됨",
+            "직원 {EmployeeId}({MaskedEmail}) 연락망에서 제외됨",
             employee.Id,
-            employee.Email.Value);
+            employee.Email.Masked);
 
         return Result.Success(Unit.Value);
     }

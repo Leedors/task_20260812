@@ -12,8 +12,8 @@ public sealed class EmailAddressTests
     {
         var result = EmailAddress.Create(input);
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal(input.ToLowerInvariant(), result.Value.Value);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Value.Should().Be(input.ToLowerInvariant());
     }
 
     [Fact]
@@ -21,8 +21,8 @@ public sealed class EmailAddressTests
     {
         var result = EmailAddress.Create("  Charles@CLOVF.com  ");
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal("charles@clovf.com", result.Value.Value);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Value.Should().Be("charles@clovf.com");
     }
 
     [Theory]
@@ -33,8 +33,8 @@ public sealed class EmailAddressTests
     {
         var result = EmailAddress.Create(input);
 
-        Assert.True(result.IsFailure);
-        Assert.Equal("employee.email_required", result.FirstError.Code);
+        result.IsFailure.Should().BeTrue();
+        result.FirstError.Code.Should().Be("employee.email_required");
     }
 
     [Theory]
@@ -48,8 +48,8 @@ public sealed class EmailAddressTests
     {
         var result = EmailAddress.Create(input);
 
-        Assert.True(result.IsFailure);
-        Assert.Equal("employee.email_invalid", result.FirstError.Code);
+        result.IsFailure.Should().BeTrue();
+        result.FirstError.Code.Should().Be("employee.email_invalid");
     }
 
     [Fact]
@@ -59,8 +59,8 @@ public sealed class EmailAddressTests
 
         var result = EmailAddress.Create(tooLong);
 
-        Assert.True(result.IsFailure);
-        Assert.Equal("employee.email_too_long", result.FirstError.Code);
+        result.IsFailure.Should().BeTrue();
+        result.FirstError.Code.Should().Be("employee.email_too_long");
     }
 
     [Fact]
@@ -69,6 +69,26 @@ public sealed class EmailAddressTests
         var left = EmailAddress.Create("clo@clovf.com").Value;
         var right = EmailAddress.Create("CLO@clovf.com").Value;
 
-        Assert.Equal(left, right);
+        left.Should().Be(right);
+    }
+
+    [Theory]
+    [InlineData("charles@clovf.com", "ch***@clovf.com")]
+    [InlineData("kildong.hong@clovf.com", "ki***@clovf.com")]
+    [InlineData("ab@clovf.com", "a***@clovf.com")]
+    [InlineData("a@clovf.com", "a***@clovf.com")]
+    public void 마스킹은_계정부_앞부분만_남긴다(string input, string expected)
+    {
+        var email = EmailAddress.Create(input).Value;
+
+        email.Masked.Should().Be(expected);
+    }
+
+    [Fact]
+    public void 마스킹된_값에는_원본_계정부가_남지_않는다()
+    {
+        var email = EmailAddress.Create("kildong.hong@clovf.com").Value;
+
+        email.Masked.Should().NotContain("kildong.hong");
     }
 }
