@@ -488,6 +488,18 @@ SQLite 는 파일 하나로 동작하면서도 실제 관계형 DB 라 인덱스
 직원을 특정해야 하는 로그(제외 처리 등)는 `EmailAddress.Masked`(`ch***@example.com`),
 `PhoneNumber.Masked`(`010-****-2468`)를 씁니다. 장애 추적에는 "누구인지 구분되는 정도"면 충분합니다.
 
+**네 번째 지점은 실제로 로그를 열어보고 발견했습니다.** 위 세 가지를 처리한 뒤 확인해 보니,
+ASP.NET Core 기본 요청 로거(`Microsoft.AspNetCore.Hosting.Diagnostics`)가 원본 URL을 그대로 남기고 있었습니다.
+
+```
+GET /api/employee/{name} → 404 (36.9ms)                     ← 애플리케이션 미들웨어 (정상)
+Request starting HTTP/1.1 GET .../api/employee/김철수         ← 프레임워크 (이름 노출)
+```
+
+운영 설정은 `Microsoft.AspNetCore` 가 `Warning` 이라 나오지 않지만, 개발 설정에서는 노출됐습니다.
+`appsettings.Development.json` 에서 해당 카테고리만 `Warning` 으로 낮췄습니다.
+**직접 만든 코드만 점검해서는 못 잡는 종류의 누출**이었습니다.
+
 ---
 
 ## 6. 해석이 갈릴 수 있는 부분 (명시적 가정)
