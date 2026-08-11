@@ -1,0 +1,15 @@
+services:
+  api:
+    build: .
+    image: employee-directory-api:local
+    ports:
+      - "8080:8080"
+    environment:
+      # 개발 로그를 보려면 Development 로 바꾸면 된다.
+      ASPNETCORE_ENVIRONMENT: Production
+    volumes:
+      # 컨테이너를 다시 만들어도 등록한 직원 데이터가 남는다.
+      - employee-data:/data
+
+volumes:
+  employee-data:

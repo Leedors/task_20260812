@@ -1,5 +1,7 @@
 # Employee Directory API
 
+[![CI](https://github.com/Leedors/task_20260812/actions/workflows/ci.yml/badge.svg)](https://github.com/Leedors/task_20260812/actions/workflows/ci.yml)
+
 직원 긴급 연락망 백엔드 API. csv/json 업로드로 직원 연락처를 등록하고, 목록(페이징·검색)·상세 조회와 개별 정정을 제공합니다.
 
 - **Framework**: .NET 8 (C# 12), ASP.NET Core
@@ -47,6 +49,31 @@ dotnet run --project src/EmployeeDirectory.Api --urls http://localhost:8080
 ```bash
 dotnet test
 ```
+
+### Docker 로 실행하기 (.NET SDK 없이)
+
+```bash
+docker compose up --build
+```
+
+`http://localhost:8080/swagger` 로 접속합니다. SQLite 파일은 `/data` 볼륨에 저장되므로
+컨테이너를 다시 만들어도 등록한 데이터가 남습니다.
+
+- 비특권 사용자로 실행합니다(.NET 8 이미지가 제공하는 `app` 사용자).
+- PaaS 에 올릴 때는 `PORT` 환경변수를 읽어 바인딩합니다. 없으면 8080 을 씁니다.
+- 컨테이너 상태 확인은 `/health` 로 합니다.
+
+### CI
+
+`main` 에 푸시하거나 PR 을 올리면 GitHub Actions 가 다음을 자동으로 검증합니다.
+
+| 작업 | 내용 |
+| --- | --- |
+| 빌드 · 테스트 | **Ubuntu / Windows 양쪽**에서 .NET 8 SDK 로 빌드하고 테스트 192개 실행 |
+| 도커 | 이미지를 빌드하고 **실제로 컨테이너를 띄워** `/health` 와 조회 API 응답까지 확인 |
+
+"clone 후 빌드 성공 및 결과 확인 가능"이 이 과제의 실격 조건이라, 그 조건을 사람이 아니라
+파이프라인이 매 커밋마다 확인하게 했습니다.
 
 ---
 

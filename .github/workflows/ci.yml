@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    # 리뷰어 환경(.NET 8)에서 빌드와 테스트가 통과하는지 매 커밋마다 증명한다.
+    # 과제의 실격 조건이 "clone 후 빌드 성공 및 결과 확인 가능"이기 때문이다.
+    name: 빌드 · 테스트 (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - name: 소스 체크아웃
+        uses: actions/checkout@v4
+
+      - name: .NET 8 SDK 설치
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: SDK 버전 확인
+        run: dotnet --list-sdks
+
+      - name: 패키지 복원
+        run: dotnet restore EmployeeDirectory.sln
+
+      - name: 빌드
+        run: dotnet build EmployeeDirectory.sln --no-restore -c Release
+
+      - name: 테스트 (단위 + 통합)
+        run: dotnet test EmployeeDirectory.sln --no-build -c Release --logger "trx;LogFileName=test-results.trx"
+
+      - name: 테스트 결과 업로드
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.os }}
+          path: '**/TestResults/*.trx'
+          if-no-files-found: ignore
+
+  docker:
+    # Dockerfile 이 "빌드만 되는" 상태로 남지 않게, 이미지를 만들고 실제로 띄워서
+    # 헬스체크와 조회 API 까지 응답하는지 확인한다.
+    name: 도커 이미지 빌드 · 기동 확인
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 소스 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 이미지 빌드
+        run: docker build -t employee-directory-api:ci .
+
+      - name: 컨테이너 기동
+        run: docker run -d --name api -p 8080:8080 employee-directory-api:ci
+
+      - name: 헬스체크 대기
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl -sf http://localhost:8080/health > /dev/null; then
+              echo "기동 확인 ($attempt 회차)"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "기동 실패 — 컨테이너 로그:"
+          docker logs api
+          exit 1
+
+      - name: API 응답 확인
+        run: |
+          echo "--- /health ---"
+          curl -sf http://localhost:8080/health
+          echo
+          echo "--- 시드 적재 확인 ---"
+          curl -sf "http://localhost:8080/api/employee?page=1&pageSize=3" | grep -q '"totalCount":6'
+          echo "시드 6건 확인"
+
+      - name: 컨테이너 정리
+        if: always()
+        run: docker rm -f api || true

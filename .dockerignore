@@ -1,0 +1,19 @@
+# 빌드 산출물 — 이미지 안에서 다시 만든다
+**/bin/
+**/obj/
+
+# 로컬 실행으로 생긴 SQLite 파일
+**/*.db
+**/*.db-shm
+**/*.db-wal
+
+# 이미지에 필요 없는 것들
+.git/
+.github/
+.vs/
+.vscode/
+.idea/
+tests/
+docs/
+*.md
+*.user
