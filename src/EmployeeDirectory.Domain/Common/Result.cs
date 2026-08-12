@@ -10,6 +10,12 @@ namespace EmployeeDirectory.Domain.Common;
 /// (1) 한 번의 업로드에서 <b>여러 건</b>의 검증 실패를 모아서 돌려줘야 한다 (예외는 첫 실패에서 멈춘다),
 /// (2) 실패가 시그니처에 드러나 호출자가 처리를 강제받는다,
 /// (3) 정상 흐름에서 스택 언와인딩 비용이 없다.
+/// <para>
+/// 값에서 <c>Result&lt;T&gt;</c> 로 가는 암시적 변환은 일부러 두지 않았다.
+/// 성공에만 지름길이 생기면 오류 처리가 상대적으로 무거워 보이고,
+/// <c>Result&lt;string&gt;</c> 처럼 값 타입이 메시지인 경우 실패를 반환하려다
+/// 성공이 만들어지는 실수가 조용히 통과한다. 생성 경로는 항상 명시적으로 둔다.
+/// </para>
 /// </remarks>
 public class Result
 {
@@ -74,6 +80,4 @@ public sealed class Result<TValue> : Result
         value = _value;
         return IsSuccess;
     }
-
-    public static implicit operator Result<TValue>(TValue value) => Success(value);
 }
