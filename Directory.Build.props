@@ -5,7 +5,7 @@
       과제 요구사항은 ".NET 8 이상". LTS 인 net8.0 을 타겟으로 삼았다.
       net8.0 은 .NET 8/9/10 어느 SDK 에서도 빌드되지만, net9.0 이상은 .NET 8 SDK 에서 빌드되지 않는다.
       "clone 후 빌드가 반드시 성공해야 한다"는 조건에서는 하위 호환이 넓은 쪽이 옳다고 판단했다.
-      (실행 환경 호환은 Api 프로젝트의 RollForward 설정 참고)
+      (실행 환경 호환은 아래 RollForward 설정 참고)
     -->
     <TargetFramework>net8.0</TargetFramework>
     <LangVersion>12.0</LangVersion>
@@ -13,7 +13,10 @@
     <!--
       .NET 8 런타임이 없고 9/10 만 설치된 환경에서도 실행/테스트가 가능하도록 상위 메이저로 롤포워드한다.
       과제에서 가장 큰 위험은 "결과를 확인할 수 없는 것"이므로 실행 호환성을 최대한 넓혔다.
-      (알려진 제약은 README 의 "실행 환경" 항목 참고)
+      다만 상위 런타임으로 올라가면 Microsoft.AspNetCore.Mvc.Testing 8.x 의 테스트 서버가
+      .NET 9 부터 바뀐 PipeWriter 규약을 구현하지 않아 통합 테스트가 깨진다.
+      그래서 CI 의 테스트 단계에서만 8.0 계열로 고정한다 (.github/workflows/ci.yml 참고).
+      앱 실행 시의 롤포워드 동작에는 영향이 없다.
     -->
     <RollForward>LatestMajor</RollForward>
 

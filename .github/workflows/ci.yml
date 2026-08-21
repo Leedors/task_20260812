@@ -42,7 +42,7 @@ jobs:
         run: dotnet test EmployeeDirectory.sln --no-build -c Release --logger "trx;LogFileName=test-results.trx"
         env:
           # 이 저장소는 net8.0 을 타겟으로 하고, .NET 8 런타임이 없는 환경에서도 앱이 뜨도록
-          # RollForward=LatestMajor 를 켜 두었다(README 11절).
+          # RollForward=LatestMajor 를 켜 두었다(Directory.Build.props 참고).
           #
           # 그런데 러너에는 상위 런타임이 함께 설치돼 있어서, 그대로 두면 테스트 호스트가
           # .NET 9/10 으로 올라간다. Microsoft.AspNetCore.Mvc.Testing 8.x 의 테스트 서버는
